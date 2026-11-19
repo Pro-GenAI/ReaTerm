@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reaterm"
+version = "0.0.1"
+description = "Python wrapper for the ReaTerm read-only native CLI"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Pro-GenAI"}]
+dependencies = []
+
+[project.urls]
+Homepage = "https://reaterm.pro-genai.com/"
+Documentation = "https://reaterm.pro-genai.com/#get-started"
+Repository = "https://github.com/Pro-GenAI/ReaTerm"
+Issues = "https://github.com/Pro-GenAI/ReaTerm/issues"
+
+[project.optional-dependencies]
+decision = ["openai>=1.0.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["reaterm*"]

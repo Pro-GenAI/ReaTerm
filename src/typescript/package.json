@@ -1,0 +1,55 @@
+{
+  "name": "reaterm",
+  "version": "0.0.1",
+  "description": "TypeScript adapter for the ReaTerm native read-only terminal",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "files": [
+    "dist/src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/test/*.test.js",
+    "check": "npm run build && npm run test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "openai": ">=4 <8"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "openai": "^6.0.0",
+    "typescript": "^5.8.0"
+  },
+  "license": "MIT",
+  "homepage": "https://reaterm.pro-genai.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pro-GenAI/ReaTerm.git",
+    "directory": "src/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/Pro-GenAI/ReaTerm/issues"
+  },
+  "keywords": [
+    "reaterm",
+    "read-only",
+    "terminal",
+    "rust",
+    "linux",
+    "typescript",
+    "security"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

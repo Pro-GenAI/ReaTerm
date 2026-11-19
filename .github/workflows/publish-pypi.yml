@@ -1,0 +1,130 @@
+name: Publish ReaTerm Python to PyPI
+
+on:
+  release:
+    types: [published]
+
+# The existing disabled test workflows remain disabled; this file only
+# publishes a validated GitHub release using PyPI Trusted Publishing.
+jobs:
+  build-and-test:
+    name: Verify release tag and Python distributions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate release tag, names and version alignment
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import tomllib
+
+          tag = os.environ["RELEASE_TAG"]
+          if not re.fullmatch(r"v?[0-9]+\.[0-9]+\.[0-9]+(?:rc[0-9]+)?", tag):
+              raise SystemExit(f"Expected a version tag such as v0.1.0, got {tag!r}")
+          version = tag.removeprefix("v")
+          py = tomllib.loads(Path("src/python/pyproject.toml").read_text(encoding="utf-8"))["project"]
+          rust = tomllib.loads(Path("src/rust/Cargo.toml").read_text(encoding="utf-8"))["package"]
+          npm = json.loads(Path("src/typescript/package.json").read_text(encoding="utf-8"))
+          if py["name"] != "reaterm" or rust["name"] != "reaterm" or npm["name"] != "reaterm":
+              raise SystemExit("Package names do not match ReaTerm")
+          versions = (py["version"], rust["version"], npm["version"])
+          if any(item != version for item in versions):
+              raise SystemExit(f"Tag {tag!r} disagrees with Python/Rust/npm versions {versions}")
+          print(f"Validated ReaTerm release {tag}")
+          PY
+
+      - name: Install distribution build tools
+        run: python -m pip install --disable-pip-version-check build twine
+
+      - name: Verify entire ReaTerm repository in strict fail-fast order
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_make*.py' -v
+          python3 -m unittest discover -s scripts -p 'test_publish*.py' -v
+          make verify
+          test -x src/rust/target/release/reaterm
+
+      - name: Build wheel and sdist
+        working-directory: src/python
+        run: python -m build --wheel --sdist
+
+      - name: Verify distribution metadata
+        working-directory: src/python
+        run: |
+          python -m twine check dist/*
+          test "$(find dist -maxdepth 1 -name '*.whl' | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.tar.gz' | wc -l)" -eq 1
+
+      - name: Install built wheel into a clean venv and run real integration tests
+        shell: bash
+        env:
+          REATERM_DECISION_MODEL: ""
+        run: |
+          set -euo pipefail
+          temp="$(mktemp -d)"
+          trap 'rm -rf "$temp"' EXIT
+          python -m venv "$temp/venv"
+          wheel="$(find src/python/dist -maxdepth 1 -name '*.whl' -print -quit)"
+          test -f "$wheel"
+          "$temp/venv/bin/python" -m pip install --disable-pip-version-check "$wheel"
+          cp -R src/python/tests "$temp/tests"
+          export REATERM_BIN="$GITHUB_WORKSPACE/src/rust/target/release/reaterm"
+          test -x "$REATERM_BIN"
+          cd "$temp"
+          "$temp/venv/bin/python" -c 'from importlib.metadata import version; import reaterm; assert version("reaterm"); print(reaterm.__file__)'
+          "$temp/venv/bin/python" -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Upload verified distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: reaterm-pypi-distributions
+          path: src/python/dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-pypi:
+    name: Publish verified ReaTerm to PyPI
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/reaterm/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download verified wheel and sdist
+        uses: actions/download-artifact@v4
+        with:
+          name: reaterm-pypi-distributions
+          path: dist/
+
+      - name: Publish via PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@v1.13.0
+        with:
+          packages-dir: dist/

@@ -1,0 +1,68 @@
+name: Windows Native Verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/rust/**"
+      - "src/python/**"
+      - "src/typescript/**"
+      - "docs/website/**"
+      - "scripts/verify-windows.ps1"
+      - ".github/workflows/windows.yml"
+  pull_request:
+    paths:
+      - "src/rust/**"
+      - "src/python/**"
+      - "src/typescript/**"
+      - "docs/website/**"
+      - "scripts/verify-windows.ps1"
+      - ".github/workflows/windows.yml"
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows x86_64 read-only regression
+    runs-on: windows-2022
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Windows native build, unit tests, adapter tests, website tests
+        shell: pwsh
+        run: |
+          .\scripts\verify-windows.ps1 -Mode verify
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows CLI smoke test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = '.\src\rust\target\release\reaterm.exe'
+          & $exe --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $exe --about
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $exe --root . ls
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $exe --root . rm README.md
+          if ($LASTEXITCODE -eq 0) { throw "Unsafe: mutation command accepted" }
+          & $exe --help cat README.md
+          if ($LASTEXITCODE -eq 0) { throw "Unsafe: combined --help command accepted" }
+          # Rejections above are expected; finish with a successful command
+          # so the GitHub PowerShell wrapper does not inherit exit code 2.
+          & $exe --version
+          if ($LASTEXITCODE -ne 0) { throw "Windows CLI final smoke check failed" }
+      - name: Publish Windows native binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: reaterm-windows-x86_64
+          path: src/rust/target/release/reaterm.exe

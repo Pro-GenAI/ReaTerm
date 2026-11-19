@@ -1,0 +1,35 @@
+TODO*
+posts/
+
+# Rust
+target/
+**/target/
+Cargo.lock.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# TypeScript / Node
+node_modules/
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Prevent accidentally staging npm credentials from older publishing helpers
+/src/typescript/.npmrc
+/src/typescript/.npmrc.publish

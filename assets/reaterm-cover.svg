@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520" role="img" aria-labelledby="title desc">
+  <title id="title">ReaTerm — inspect freely, change nothing</title>
+  <desc id="desc">Dark navy and teal cover with a shield icon, read-only terminal preview, and Rust, Python, and TypeScript badges.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071020"/><stop offset=".65" stop-color="#0e1530"/><stop offset="1" stop-color="#160d32"/></linearGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#5cf4c8"/><stop offset="1" stop-color="#34c7fc"/></linearGradient>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#83ffe1" stop-opacity=".8"/><stop offset=".7" stop-color="#2d9fd5" stop-opacity=".32"/><stop offset="1" stop-color="#a060ff" stop-opacity=".6"/></linearGradient>
+    <radialGradient id="tealGlow"><stop stop-color="#04b78c" stop-opacity=".24"/><stop offset="1" stop-color="#04b78c" stop-opacity="0"/></radialGradient>
+    <radialGradient id="purpleGlow"><stop stop-color="#7a42da" stop-opacity=".23"/><stop offset="1" stop-color="#7a42da" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 H 0 V 40" fill="none" stroke="#9cbbdd" stroke-opacity=".09" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="1600" height="520" fill="url(#bg)"/>
+  <rect width="1600" height="520" fill="url(#grid)"/>
+  <ellipse cx="210" cy="145" rx="510" ry="375" fill="url(#tealGlow)"/>
+  <ellipse cx="1435" cy="490" rx="500" ry="330" fill="url(#purpleGlow)"/>
+  <path d="M0 460 C290 355 350 555 680 447 S1200 390 1600 474" fill="none" stroke="#54edbe" stroke-width="1.5" stroke-opacity=".28"/>
+  <path d="M0 481 C280 380 390 564 700 460 S1280 395 1600 495" fill="none" stroke="#658de8" stroke-width="1.5" stroke-opacity=".25"/>
+  <path d="M0 504 C300 419 370 580 710 477 S1280 425 1600 514" fill="none" stroke="#a879ff" stroke-width="1.5" stroke-opacity=".22"/>
+
+  <g transform="translate(108 99)">
+    <path d="M 52 2 L 103 25 V 83 C 103 125 81 151 52 166 C 23 151 1 125 1 83 V 25 Z" fill="#062e34" fill-opacity=".7" stroke="url(#brand)" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M 24 82 Q 52 50 80 82 Q 52 113 24 82 Z" fill="none" stroke="#d8fff5" stroke-width="5"/>
+    <circle cx="52" cy="82" r="12" fill="#58e7ce"/>
+    <circle cx="52" cy="82" r="5" fill="#07354a"/>
+  </g>
+  <text x="244" y="196" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="91" font-weight="800" fill="#f4f9ff" letter-spacing="-3">Rea<tspan fill="#56f4c5">Term</tspan></text>
+  <text x="244" y="268" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="36" fill="#d2e0f1" font-weight="500">Observe. Never alter.</text>
+  <rect x="113" y="310" width="485" height="65" rx="32" fill="#0c353d" stroke="#41e8b7" stroke-opacity=".85" stroke-width="2"/>
+  <circle cx="154" cy="343" r="9" fill="#44e9bb"/>
+  <text x="180" y="355" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="29" font-weight="700" fill="#effffb">READ-ONLY BY DESIGN</text>
+  <text x="115" y="422" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="22" font-weight="500" fill="#8fc9d6">RUST NATIVE</text>
+  <circle cx="302" cy="413" r="4" fill="#53e6c6"/>
+  <text x="323" y="422" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="22" font-weight="500" fill="#8fc9d6">LINUX</text>
+  <circle cx="405" cy="413" r="4" fill="#53e6c6"/>
+  <text x="424" y="422" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="22" font-weight="500" fill="#8fc9d6">PYTHON + TS</text>
+
+  <g transform="translate(739 56)">
+    <rect x="0" y="0" width="780" height="395" rx="23" fill="#091225" stroke="url(#frame)" stroke-width="2.5"/>
+    <path d="M 23 0 H 757 Q 780 0 780 23 V 66 H 0 V 23 Q 0 0 23 0" fill="#12223a"/>
+    <circle cx="33" cy="33" r="8" fill="#ff6666"/>
+    <circle cx="58" cy="33" r="8" fill="#ffcf56"/>
+    <circle cx="83" cy="33" r="8" fill="#4be5a0"/>
+    <text x="390" y="41" text-anchor="middle" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="19" font-weight="600" fill="#bad0e3" letter-spacing="3">REATERM / SESSION</text>
+    <g font-family="DejaVu Sans Mono, Consolas, monospace" font-size="25">
+      <text x="35" y="120" fill="#56ecc5">$ <tspan fill="#f2f6ff">reaterm ls -la</tspan></text>
+      <text x="35" y="176" fill="#85abc2">dir</text><text x="145" y="176" fill="#a4b8ca">4096</text><text x="295" y="176" fill="#63d7e9">src/</text>
+      <text x="35" y="213" fill="#85abc2">file</text><text x="145" y="213" fill="#a4b8ca">1860</text><text x="295" y="213" fill="#e7eefc">README.md</text>
+      <text x="35" y="285" fill="#56ecc5">$ <tspan fill="#f2f6ff">reaterm chmod 777 README.md</tspan></text>
+      <text x="35" y="333" fill="#ff8f9e" font-size="23">DENIED <tspan fill="#8db4c8">— not in the read-only allowlist</tspan></text>
+    </g>
+    <path d="M 35 357 H 745" stroke="#3a5a74" stroke-width="1" stroke-opacity=".7"/>
+    <text x="35" y="380" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="16" font-weight="650" fill="#63dcc7" letter-spacing="2">CAPABILITY-SCOPED ROOT</text>
+    <text x="522" y="380" font-family="Inter, Segoe UI, DejaVu Sans, sans-serif" font-size="16" font-weight="650" fill="#c4aaff" letter-spacing="2">OS SANDBOX REQUIRED</text>
+  </g>
+  <rect x="1" y="1" width="1598" height="518" fill="none" stroke="#427095" stroke-opacity=".28" stroke-width="2"/>
+</svg>

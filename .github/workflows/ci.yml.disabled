@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      stress:
+        description: Run slow directory-entry limit test
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate Make setup/test failure propagation
+        run: python -m unittest discover -s scripts -p "test_make*.py" -v
+      - name: Make verify (Rust, Python, TypeScript, website)
+        run: make verify
+      - name: Optional resource stress test
+        if: github.event_name == 'workflow_dispatch' && inputs.stress
+        run: cargo test --manifest-path src/rust/Cargo.toml --test resource_limits -- --ignored
+      - name: Landlock read-only smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          testdir="$(mktemp -d)"
+          trap 'rm -rf "$testdir"' EXIT
+          printf 'safe contents\n' > "$testdir/safe.txt"
+          bin="$GITHUB_WORKSPACE/src/rust/target/release/reaterm"
+          "$bin" --root "$testdir" cat safe.txt | grep -q 'safe contents'
+          "$bin" --root "$testdir" ls | grep -q 'safe.txt'
+          "$bin" --version | grep -q '^reaterm '
+          "$bin" --help | grep -q 'Usage:'
+          "$bin" --list-commands | grep -q '^cat$'
+          "$bin" --limits | grep -q '10 MiB'
+          if "$bin" --help cat safe.txt; then
+            echo "UNSAFE: command accepted alongside --help" >&2
+            exit 1
+          fi
+          if "$bin" cat safe.txt --version; then
+            echo "UNSAFE: command accepted alongside --version" >&2
+            exit 1
+          fi
+          for command in rm rmdir cp mv touch mkdir chmod chown chgrp truncate tee install ln sed sh bash python3; do
+            if "$bin" --root "$testdir" "$command" safe.txt; then
+              echo "UNSAFE: $command was permitted" >&2
+              exit 1
+            fi
+          done
+          if "$bin" --root "$testdir" ls -R; then
+            echo "UNSAFE: unsupported ls flag was permitted" >&2
+            exit 1
+          fi
+          if "$bin" --root "$testdir" cat ../safe.txt; then
+            echo "UNSAFE: path escape was permitted" >&2
+            exit 1
+          fi
+          test "$(cat "$testdir/safe.txt")" = 'safe contents'
+      - name: Publish compiled Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reaterm-linux-x86_64
+          path: src/rust/target/release/reaterm
+
+  platform-native:
+    name: Native ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04-arm
+            name: linux-aarch64
+          - runner: macos-15-intel
+            name: macos-x86_64
+          - runner: macos-15
+            name: macos-aarch64
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Confirm native architecture
+        shell: bash
+        run: |
+          uname -s
+          uname -m
+          rustc --version --verbose
+      - name: Make verify (native, fail-closed)
+        run: make verify
+      - name: Publish compiled native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reaterm-${{ matrix.name }}
+          path: src/rust/target/release/reaterm

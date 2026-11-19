@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070d15">
+  <meta name="description" content="ReaTerm is a native, read-only terminal with Python and Node.js run APIs plus OpenAI and Anthropic function tools. Rust enforces a strict inspection command allowlist.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ReaTerm">
+  <meta property="og:title" content="ReaTerm — Explore everything. Change nothing.">
+  <meta property="og:description" content="A read-only Rust terminal with Python and Node.js APIs, OpenAI and Anthropic function-tool schemas, and optional model veto.">
+  <meta property="og:url" content="https://reaterm.pro-genai.com/">
+  <meta property="og:image" content="https://reaterm.pro-genai.com/assets/reaterm-cover.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://reaterm.pro-genai.com/">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="stylesheet" href="./styles.css">
+  <title>ReaTerm — Read-only terminal for Linux, macOS and Windows</title>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <div class="site-glow" aria-hidden="true"></div>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="ReaTerm home">
+        <svg class="brand-mark" viewBox="0 0 44 48" aria-hidden="true" fill="none">
+          <path d="M22 2 40 10v15c0 11-7 18-18 21C11 43 4 36 4 25V10L22 2Z" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round"/>
+          <path d="M9 24c7-9 19-9 26 0-7 9-19 9-26 0Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="2.5"/>
+          <circle cx="22" cy="24" r="5" fill="currentColor"/>
+        </svg>
+        <span>Rea<span class="brand-accent">Term</span></span>
+        <span class="version-chip">v0.1</span>
+      </a>
+      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+        <a href="#why">Why ReaTerm</a>
+        <a href="#how">How it works</a>
+        <a href="#get-started">Get started</a>
+        <a href="#packages">Packages</a>
+        <a href="#ai-tools">AI tools</a>
+      </nav>
+      <a class="header-github" href="https://github.com/Pro-GenAI/ReaTerm" target="_blank" rel="noopener noreferrer" aria-label="View ReaTerm on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.11.79-.25.79-.55v-2.05c-3.22.7-3.9-1.37-3.9-1.37-.52-1.32-1.27-1.67-1.27-1.67-1.05-.72.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.67 1.25 3.32.96.1-.74.4-1.25.73-1.54-2.57-.29-5.27-1.29-5.27-5.75 0-1.27.45-2.31 1.18-3.12-.12-.29-.51-1.48.11-3.08 0 0 .96-.31 3.16 1.19a10.9 10.9 0 0 1 5.75 0c2.19-1.5 3.16-1.19 3.16-1.19.63 1.6.23 2.79.11 3.08.74.81 1.18 1.85 1.18 3.12 0 4.47-2.7 5.45-5.28 5.73.41.35.77 1.04.77 2.09v3.1c0 .3.21.67.8.55A11.5 11.5 0 0 0 12 .5Z"/></svg>
+        <span>GitHub</span><span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero container" id="top" aria-labelledby="hero-heading">
+      <div class="hero-content">
+        <div class="eyebrow"><span class="pulse-dot"></span> INTRODUCING REATERM <span class="eyebrow-separator">/</span> RUST NATIVE</div>
+        <h1 id="hero-heading">Explore everything.<br><span>Change nothing.</span></h1>
+        <p class="hero-lede">The terminal built to <strong>look, not touch.</strong> A small, intentional set of read-only commands, backed by OS-specific kernel restrictions—so inspection stays inspection.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#get-started">Get started <span aria-hidden="true">↗</span></a>
+          <a class="button button-secondary" href="https://github.com/Pro-GenAI/ReaTerm" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-meta"><span><i aria-hidden="true">✓</i> Linux / macOS / Windows</span><span><i aria-hidden="true">✓</i> No arbitrary shell execution</span><span><i aria-hidden="true">✓</i> OpenAI / Anthropic tool definitions</span></div>
+      </div>
+      <div class="hero-visual">
+        <div class="terminal-halo" aria-hidden="true"></div>
+        <div class="terminal" aria-label="Illustrative ReaTerm command output">
+          <div class="terminal-bar"><div class="terminal-dots" aria-hidden="true"><span></span><span></span><span></span></div><span>reaterm · read-only session</span><span class="terminal-lock" aria-hidden="true">◈</span></div>
+          <div class="terminal-content">
+            <div class="terminal-line"><span class="prompt">❯</span><span>reaterm <span class="syntax-flag">ls -la</span></span></div>
+            <div class="listing"><span class="file-type">dir</span><span>4096</span><span class="directory">src/</span></div>
+            <div class="listing"><span class="file-type">dir</span><span>4096</span><span class="directory">docs/</span></div>
+            <div class="listing"><span class="file-type">file</span><span>4324</span><span>README.md</span></div>
+            <div class="terminal-line terminal-line-spaced"><span class="prompt">❯</span><span>reaterm <span class="syntax-flag">chmod 777 README.md</span></span></div>
+            <div class="terminal-error"><span class="denied-marker">✕ DENIED</span><span>not in the read-only allowlist</span></div>
+            <div class="terminal-line terminal-cursor"><span class="prompt">❯</span><span class="cursor-block" aria-hidden="true"></span></div>
+          </div>
+          <div class="terminal-bottom"><span><span class="status-dot"></span> NATIVE RUST</span><span>LANDLOCK + SECCOMP</span></div>
+        </div>
+        <div class="floating-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m12 22 7-4.3V7L12 2 5 7v10.7L12 22Z"/><path d="m9 12 2 2 4-4"/></svg><span>Read-only by design</span></div>
+        <p class="demo-disclaimer">Illustrative terminal output</p>
+      </div>
+    </section>
+
+    <section class="principle-strip" aria-label="Product principles">
+      <div class="container principles">
+        <div><span class="principle-number">08</span><span>Explicit read-only commands</span></div>
+        <div><span class="principle-number">00</span><span>Arbitrary executables allowed</span></div>
+        <div><span class="principle-number">02</span><span>OS kernel guards</span></div>
+      </div>
+    </section>
+
+    <section class="section container" id="why" aria-labelledby="why-heading">
+      <div class="section-intro"><p class="section-kicker">01 / THE IDEA</p><h2 id="why-heading">Not a shell with rules.<br><span class="muted-heading">A smaller surface entirely.</span></h2><p>ReaTerm does not try to guess which Bash commands are safe. It only implements read-only inspection operations and rejects everything else.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="22" height="17" rx="3"/><path d="m10 14 4 3-4 3M17 20h6"/></svg></span><h3>Allowlist, not guesswork</h3><p><code>ls</code>, <code>cat</code>, <code>grep</code> and five other native commands. No interpreters, scripts, unknown flags, or subprocess forwarding.</p><span class="feature-id">POLICY / 001</span></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m16 3 11 5v8c0 8-5 11-11 14C10 27 5 24 5 16V8l11-5Z"/><path d="m11 16 3 3 7-7"/></svg></span><h3>Kernel-level guardrails</h3><p>Linux requires Landlock and seccomp; macOS uses Seatbelt; Windows uses a low-integrity write-restricted access token. Enforcement failures stop the command.</p><span class="feature-id">KERNEL / 002</span></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 13V6h9M28 19v7h-9M4 6l9 9M28 26 18 16"/><rect x="11" y="11" width="10" height="10" rx="2"/></svg></span><h3>Scoped. Predictable. Small.</h3><p>Read paths are relative to a caller-chosen root. File sizes, output and directory listing lengths are bounded. No hidden command hooks.</p><span class="feature-id">DESIGN / 003</span></article>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="how" aria-labelledby="how-heading">
+      <div class="container">
+        <div class="section-intro"><p class="section-kicker">02 / UNDER THE HOOD</p><h2 id="how-heading">An intentionally <span class="accent">short path.</span></h2><p>The parser validates the entire request. Only explicit read operations can reach the native filesystem reader after mandatory kernel confinement is installed.</p></div>
+        <div class="flow-diagram" role="img" aria-label="CLI, Python and TypeScript feed validated arguments to a Rust allowlist, then through platform-specific kernel enforcement and a scoped read operation. All unknown commands are denied.">
+          <div class="flow-node"><span class="flow-step">01 · ENTRY</span><strong>CLI &amp; SDKs</strong><small>argv, no shell</small></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-node"><span class="flow-step">02 · VALIDATE</span><strong>Rust allowlist</strong><small>deny by default</small></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-node flow-node-accent"><span class="flow-step">03 · ENFORCE</span><strong>OS guard</strong><small>Landlock / Seatbelt / token</small></div>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <div class="flow-node"><span class="flow-step">04 · INSPECT</span><strong>Scoped read</strong><small>bounded output</small></div>
+        </div>
+        <div class="flow-footnote"><span class="mini-badge">OPTIONAL</span> Python and TypeScript adapters can ask an OpenAI-compatible model to <strong>veto</strong> a request. Python also exposes OpenAI and Anthropic <strong>function tools</strong>: the application executes accepted tool calls through this same native read-only path. A model cannot expand Rust permissions.</div>
+      </div>
+    </section>
+
+    <section class="section container" id="get-started" aria-labelledby="start-heading">
+      <div class="section-intro"><p class="section-kicker">03 / QUICK START</p><h2 id="start-heading">From zero to <span class="accent">read-only.</span></h2><p>Choose your integration. Each path uses the same compiled native engine and requires Linux with Landlock and seccomp, macOS with Seatbelt, or Windows x86-64 with a low-integrity write-restricted token.</p></div>
+      <div class="setup-panel">
+        <div class="tab-bar" role="tablist" aria-label="Choose an integration">
+          <button class="tab is-active" type="button" role="tab" id="tab-cli" aria-controls="panel-cli" aria-selected="true" tabindex="0" data-tab="cli"><span class="tab-sign" aria-hidden="true">›_</span> CLI / Rust</button>
+          <button class="tab" type="button" role="tab" id="tab-python" aria-controls="panel-python" aria-selected="false" tabindex="-1" data-tab="python"><span class="tab-sign" aria-hidden="true">Py</span> Python</button>
+          <button class="tab" type="button" role="tab" id="tab-typescript" aria-controls="panel-typescript" aria-selected="false" tabindex="-1" data-tab="typescript"><span class="tab-sign" aria-hidden="true">TS</span> TypeScript</button>
+        </div>
+        <div class="setup-inner">
+          <section class="tab-panel" role="tabpanel" id="panel-cli" aria-labelledby="tab-cli" data-panel="cli">
+            <div class="setup-description"><h3>Install the native CLI</h3><p>Clone the repository and install the binary into Cargo's bin directory. Run commands directly from your terminal.</p></div>
+            <div class="code-wrap"><div class="code-label"><span>BASH</span><button class="copy-button" type="button" data-copy aria-label="Copy CLI installation instructions">Copy <span aria-hidden="true">↗</span></button></div><pre><code>git clone https://github.com/Pro-GenAI/ReaTerm.git
+cd ReaTerm
+bash scripts/install.sh
+reaterm ls -la
+reaterm cat README.md</code></pre></div>
+            <p class="setup-note">Cargo's bin directory must be on PATH. Alternatively, build via <code>cargo build --release --manifest-path src/rust/Cargo.toml</code>.</p>
+          </section>
+          <section class="tab-panel" role="tabpanel" id="panel-python" aria-labelledby="tab-python" data-panel="python" hidden>
+            <div class="setup-description"><h3>Inspect from Python</h3><p>Import <code>reaterm.run("ls -al")</code> or use the <code>ReaTerm</code> class for exact argv. Python also exports OpenAI and Anthropic function-tool schemas. The Rust binary must be available on PATH or via <code>REATERM_BIN</code>.</p></div>
+            <div class="code-wrap"><div class="code-label"><span>BASH + PYTHON</span><button class="copy-button" type="button" data-copy aria-label="Copy Python installation instructions">Copy <span aria-hidden="true">↗</span></button></div><pre><code># From the repository root, after building the native binary
+python -m pip install -e src/python
+python -c 'import reaterm; print(reaterm.run("ls -al"))'</code></pre></div>
+            <p class="setup-note">Run this example from the repository root. For optional model checks, use the <code>src/python[decision]</code> extra.</p>
+          </section>
+          <section class="tab-panel" role="tabpanel" id="panel-typescript" aria-labelledby="tab-typescript" data-panel="typescript" hidden>
+            <div class="setup-description"><h3>Inspect from Node.js</h3><p>Import <code>run("ls -al")</code> from the unscoped <code>reaterm</code> npm package, or use its <code>ReaTerm</code> class for exact argv. Both call Rust without a shell.</p></div>
+            <div class="code-wrap"><div class="code-label"><span>NODE.JS / TYPESCRIPT</span><button class="copy-button" type="button" data-copy aria-label="Copy TypeScript usage example">Copy <span aria-hidden="true">↗</span></button></div><pre><code>// After npm install &amp;&amp; npm run build in src/typescript
+import * as reaterm from "reaterm";
+
+console.log(await reaterm.run("ls -al"));
+console.log(await reaterm.run('cat "README.md"'));</code></pre></div>
+            <p class="setup-note">Requires Node.js 20+. See <a href="https://github.com/Pro-GenAI/ReaTerm/tree/main/src/typescript" target="_blank" rel="noopener noreferrer">the TypeScript package source</a> for build instructions.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="packages" aria-labelledby="packages-heading">
+      <div class="container">
+        <div class="section-intro"><p class="section-kicker">04 / INTEGRATIONS</p><h2 id="packages-heading">One engine. <span class="accent">Three ways in.</span></h2><p>Install locally from source today. Package registry listings are linked for discovery, but publication status has not been verified.</p></div>
+        <div class="package-grid">
+          <article class="package-card"><div class="package-head"><div class="package-icon rust-icon" aria-hidden="true">R</div><span class="package-tag">NATIVE</span></div><h3>Rust CLI</h3><p>The security boundary. All commands are implemented directly in Rust.</p><code>cargo install --path src/rust</code><a href="https://github.com/Pro-GenAI/ReaTerm/tree/main/src/rust" target="_blank" rel="noopener noreferrer">Explore Rust source <span aria-hidden="true">↗</span></a></article>
+          <article class="package-card"><div class="package-head"><div class="package-icon python-icon" aria-hidden="true">Py</div><span class="package-tag">PYTHON</span></div><h3>Python package</h3><p>Use Python 3.11+ for shell-free inspection, OpenAI/Anthropic function tools, and an optional model veto.</p><code>pip install -e src/python</code><a href="https://github.com/Pro-GenAI/ReaTerm/tree/main/src/python" target="_blank" rel="noopener noreferrer">Python package source <span aria-hidden="true">↗</span></a><a class="registry-link" href="https://pypi.org/project/reaterm/" target="_blank" rel="noopener noreferrer">PyPI registry listing <span aria-hidden="true">↗</span></a></article>
+          <article class="package-card"><div class="package-head"><div class="package-icon ts-icon" aria-hidden="true">TS</div><span class="package-tag">NODE.JS</span></div><h3>npm / TypeScript</h3><p>Call the same binary from Node.js 20+ with no shell involved.</p><code>npm install &amp;&amp; npm run build</code><a href="https://github.com/Pro-GenAI/ReaTerm/tree/main/src/typescript" target="_blank" rel="noopener noreferrer">npm package source <span aria-hidden="true">↗</span></a><a class="registry-link" href="https://www.npmjs.com/package/reaterm" target="_blank" rel="noopener noreferrer">npm registry listing <span aria-hidden="true">↗</span></a></article>
+        </div>
+        <p class="package-note">Registry availability is not guaranteed. Use the repository source and installation instructions above until a package is confirmed published.</p>
+      </div>
+    </section>
+
+
+    <section class="section container" id="ai-tools" aria-labelledby="tools-heading">
+      <div class="section-intro"><p class="section-kicker">05 / FUNCTION TOOLS</p><h2 id="tools-heading">Give models a tool. <span class="accent">Not a shell.</span></h2><p>Use Python tool definitions for OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages. A model requests a supported inspection command, but <strong>your application</strong> executes it and sends back the result.</p></div>
+      <div class="tool-grid">
+        <article class="tool-card">
+          <div class="tool-tag"><span class="mini-badge">PYTHON SDK</span><span>OPENAI</span></div>
+          <h3>OpenAI function calling</h3>
+          <p>Import the Chat Completions schema and dispatch only the returned tool-call arguments. For the Responses API, use <code>reaterm_tool_openai_responses</code>.</p>
+          <div class="code-wrap"><div class="code-label"><span>OPENAI / PYTHON</span><button class="copy-button" type="button" data-copy aria-label="Copy OpenAI tool example">Copy <span aria-hidden="true">↗</span></button></div><pre><code>from reaterm.tools.openai import (
+    reaterm_tool_openai,
+    execute_reaterm_tool,
+)
+
+# client.chat.completions.create(
+#     ..., tools=[reaterm_tool_openai]
+# )
+# After receiving a function tool call:
+# stdout = execute_reaterm_tool(
+#     call.function.arguments, root="."
+# )</code></pre></div>
+        </article>
+        <article class="tool-card">
+          <div class="tool-tag"><span class="mini-badge">PYTHON SDK</span><span>ANTHROPIC</span></div>
+          <h3>Anthropic tool use</h3>
+          <p>Pass the Messages API tool schema, then dispatch the <code>tool_use</code> block's input through the same read-only native executor.</p>
+          <div class="code-wrap"><div class="code-label"><span>ANTHROPIC / PYTHON</span><button class="copy-button" type="button" data-copy aria-label="Copy Anthropic tool example">Copy <span aria-hidden="true">↗</span></button></div><pre><code>from reaterm.tools.anthropic import (
+    reaterm_tool_anthropic,
+    execute_reaterm_tool,
+)
+
+# client.messages.create(
+#     ..., tools=[reaterm_tool_anthropic]
+# )
+# After receiving a tool_use block:
+# stdout = execute_reaterm_tool(
+#     block.input, root="."
+# )</code></pre></div>
+        </article>
+      </div>
+      <p class="tools-footnote">Tool arguments have the form <code>{"command": "ls", "args": ["-al"]}</code>. Only eight read-only native commands are supported. Schemas alone do not execute commands; callers must send results back using each provider's tool-call ID. Returning stdout to a provider can disclose readable files. <a href="https://github.com/Pro-GenAI/ReaTerm/blob/main/docs/TOOL_INTEGRATIONS.md" target="_blank" rel="noopener noreferrer">Full tool-calling guide <span aria-hidden="true">↗</span></a></p>
+    </section>
+
+    <section class="section container" id="security" aria-labelledby="security-heading">
+      <div class="security-layout">
+        <div><p class="section-kicker">06 / THE BOUNDARIES</p><h2 id="security-heading">Security without<br><span class="accent">the fine-print tricks.</span></h2><p class="security-lede">Read-only means the <strong>ReaTerm process</strong> does not implement writes. It is not a replacement for a trusted launcher or a confidentiality control.</p><a class="inline-link" href="https://github.com/Pro-GenAI/ReaTerm/blob/main/docs/THREAT_MODEL.md" target="_blank" rel="noopener noreferrer">Read the full threat model <span aria-hidden="true">↗</span></a></div>
+        <div class="security-list">
+          <div><span class="security-list-icon" aria-hidden="true">01</span><p><strong>Parent shells are separate.</strong> Redirecting <code>reaterm ls &gt; file.txt</code> can still create or truncate a file before ReaTerm starts.</p></div>
+          <div><span class="security-list-icon" aria-hidden="true">02</span><p><strong>Inherited descriptors matter.</strong> Landlock does not revoke previously opened file descriptors; launch it from a trusted process.</p></div>
+          <div><span class="security-list-icon" aria-hidden="true">03</span><p><strong>The root is caller-selected.</strong> ReaTerm is not a tool for hiding files inside an otherwise readable directory.</p></div>
+          <div><span class="security-list-icon" aria-hidden="true">04</span><p><strong>Linux, macOS and Windows x86-64.</strong> Other Windows architectures and 32-bit ARM are unverified. Windows token protection is thread-scoped.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section container" aria-labelledby="cta-heading">
+      <div class="cta-content"><p class="section-kicker">READY TO INSPECT?</p><h2 id="cta-heading">Keep the insight.<br><span>Drop the risk of accidental writes.</span></h2><p>Start with the Rust CLI, or build against the same engine using Python or TypeScript.</p><div class="hero-actions"><a class="button button-primary" href="#get-started">Get ReaTerm <span aria-hidden="true">↗</span></a><a class="button button-secondary" href="https://github.com/Pro-GenAI/ReaTerm/blob/main/docs/TESTING.md" target="_blank" rel="noopener noreferrer">See the tests <span aria-hidden="true">↗</span></a></div></div>
+      <div class="cta-pattern" aria-hidden="true"><span>READ_</span><span>ONLY_</span><span>BY_DESIGN_</span></div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container footer-inner"><div class="footer-left"><a class="footer-brand" href="#top">Rea<span>Term</span></a><p>Observe. Never alter. · Built by Pro-GenAI</p></div><div class="footer-links"><a href="https://github.com/Pro-GenAI/ReaTerm" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://github.com/Pro-GenAI/ReaTerm/blob/main/docs/DEVELOPMENT.md" target="_blank" rel="noopener noreferrer">Docs</a><a href="https://github.com/Pro-GenAI/ReaTerm/blob/main/docs/TESTING.md" target="_blank" rel="noopener noreferrer">Tests</a><a href="#security">Security</a></div><span class="footer-legal">© 2026 Pro-GenAI</span></div></footer>
+  <div class="sr-only" id="copy-status" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
