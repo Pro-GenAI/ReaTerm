@@ -25,7 +25,7 @@ information without handing them an unrestricted command runner.
 - **One-line integration.** Use `reaterm.run("ls -al")` in Python or
   `await reaterm.run("ls -al")` in JavaScript.
 - **Made for AI agents.** Python function-tool definitions for OpenAI
-  Chat Completions, OpenAI Responses, and Anthropic Messages.
+  and Anthropic, plus a local stdio MCP server for compatible AI clients.
 
 ## Simple to use
 
@@ -70,7 +70,20 @@ explicitly executes the request through ReaTerm and returns the result.
 There is no shell. Tool results shared with a provider may disclose
 readable files from your selected root.
 
-**[See OpenAI & Anthropic examples](docs/TOOL_INTEGRATIONS.md)**
+**[See OpenAI, Anthropic & MCP examples](docs/TOOL_INTEGRATIONS.md)**
+
+## Connect an MCP client
+
+Use the local MCP server to offer one `run_command` inspection tool:
+
+~~~sh
+reaterm-mcp --root /absolute/path/to/project
+~~~
+
+The MCP server uses the separately installed Rust binary. The client can
+request only supported read-only commands, not an arbitrary shell, and
+cannot choose the directory exposed by the server. The operator chooses
+that directory when starting the server.
 
 ## Small surface. Clear boundaries.
 

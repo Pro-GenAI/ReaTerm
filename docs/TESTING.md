@@ -67,6 +67,7 @@ To run ignored resource stress tests without the wrapper:
 | Python test_convenience.py | Package-level run import, `ls -al` argv splitting, quotes, shell-syntax rejection, native denial |
 | TypeScript convenience.test.ts | ESM top-level export, shell-syntax rejection, native `ls -al` and quoted filenames |
 | Python test_tools.py | OpenAI Chat Completions/Responses and Anthropic tool schemas, strict arguments, literal-argv execution, native denial and optional disposable native integration |
+| Python test_mcp_server.py | MCP stdio server entry point, required trusted root, single read-only tool, strict argv, native denials; mocked optional MCP SDK |
 | Python test_client.py and test_security.py | No shell interpolation, error and timeout handling, native bridge, model veto and missing credentials, fake SDK and environment precedence |
 | TypeScript client.test.ts and security.test.ts | Real native execution, denied mutations and path escape, mode preservation, missing binary, mock local OpenAI endpoint and veto |
 | GitHub Actions smoke step | Release binary reads, rejects destructive commands/unsupported flags/root escapes |
@@ -88,6 +89,8 @@ To run ignored resource stress tests without the wrapper:
 6. Optional OpenAI-compatible decisions can veto but never grant commands.
    Provider tool schemas cannot execute automatically or choose the executable
    or root; `execute_reaterm_tool` validates tool arguments and dispatches argv.
+   MCP clients likewise cannot select the root or executable; the stdio server
+   receives a required trusted `--root` at startup.
    All model test calls use a fake SDK or a 127.0.0.1 test server, never
    external paid providers.
 7. Test files retain the same contents, permission bits, and modification

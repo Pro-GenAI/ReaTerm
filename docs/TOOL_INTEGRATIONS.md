@@ -1,4 +1,4 @@
-# Use ReaTerm as a function tool (Python)
+# ReaTerm AI tool integrations (Python and MCP)
 
 ReaTerm provides JSON schemas that can be passed to the official OpenAI
 and Anthropic Python SDKs. A model can request a read-only inspection
@@ -131,3 +131,61 @@ tool-result format.
 - A configured optional ReaTerm decision model may veto an operation.
   This is separate from the OpenAI/Anthropic tools shown above and
   cannot authorize an otherwise forbidden command.
+
+
+## Model Context Protocol (MCP) stdio server
+
+The Python package also provides a local MCP server with one tool,
+`run_command`. It delegates to the **same** `execute_reaterm_tool` and
+native Rust executable used by the OpenAI/Anthropic adapters. No shell,
+HTTP listener or arbitrary subprocess command is introduced.
+
+Install the optional official MCP Python SDK v2 and the Python wrapper,
+then install/build the native Rust CLI separately:
+
+~~~sh
+python -m pip install 'reaterm[mcp]'
+# In a source checkout, instead use:
+# python -m pip install -e './src/python[mcp]'
+~~~
+
+Configure a compatible MCP host to launch the server over stdio. For clients
+using the `mcpServers` configuration format, an example is:
+
+~~~json
+{
+  "mcpServers": {
+    "reaterm": {
+      "command": "reaterm-mcp",
+      "args": [
+        "--root", "/absolute/path/to/allowed-project",
+        "--binary", "/absolute/path/to/reaterm"
+      ]
+    }
+  }
+}
+~~~
+
+`--root` is mandatory; the directory must exist. `--binary` is optional
+when the native executable can be discovered using `REATERM_BIN` or PATH.
+The MCP host, **not** the model, configures both paths. The server has no
+network transport and writes protocol messages only to stdout.
+
+The exposed tool accepts the following arguments:
+
+~~~json
+{"command": "grep", "args": ["-n", "TODO", "README.md"]}
+~~~
+
+The tool name is `run_command`; `command` is limited to `pwd`, `ls`,
+`cat`, `head`, `tail`, `wc`, `grep`, and `stat`. Each argument is an
+individual literal argv token, never interpreted by a shell. The native
+Rust executor validates flags and paths, enforces resource bounds, and
+fails closed if OS protections are unavailable. Native denial is returned
+as a tool error by the MCP SDK.
+
+**Confidentiality warning:** clients can read files inside the operator's
+selected root and may send returned content to an external model. Only
+expose a minimal directory without credentials or other data that the
+client is not permitted to see. Optional ReaTerm decision-model vetos
+remain controlled by the launching environment.

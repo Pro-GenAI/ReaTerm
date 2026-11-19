@@ -13,8 +13,8 @@ execution path.
 - **One line to inspect:** `reaterm.run("ls -al")`.
 - **Everything needed for a quick look:** directory listings,
   file contents, literal text searches, and metadata.
-- **AI-ready tool schemas:** OpenAI Chat Completions, OpenAI Responses,
-  and Anthropic Messages integrations.
+- **AI-ready tool integrations:** OpenAI, Anthropic, and a local stdio
+  Model Context Protocol (MCP) server.
 - **Security by design:** fixed commands, bounded reads,
   scoped paths, and OS-backed restrictions.
 
@@ -49,6 +49,17 @@ from reaterm.tools.anthropic import reaterm_tool_anthropic
 Your application executes returned tool calls explicitly and sends
 results back. Tool schemas alone never run commands, and returning
 file content to a provider can disclose information in the selected root.
+
+## Connect an MCP client
+
+~~~sh
+reaterm-mcp --root /absolute/path/to/project
+~~~
+
+Compatible MCP clients can invoke the `run_command` tool using a read-only
+command name and exact argv tokens. The server exposes no shell or arbitrary
+executable access; the root is selected when the server starts, not by the
+model. The optional MCP SDK is installed separately from the base package.
 
 [Explore the tool integrations](../../docs/TOOL_INTEGRATIONS.md)
 

@@ -20,6 +20,25 @@ These targets build dependencies and create disposable test fixtures; only
 the ReaTerm runtime is intended to be read-only. Native integration tests
 require supported OS enforcement. Do not run sandbox tests as root.
 
+### MCP adapter development
+
+The MCP server is a Python-only stdio adapter; it does not modify the
+native command set. The `mcp` extra uses the official MCP Python SDK
+v2 (`MCPServer` API). To exercise the real protocol, install it in a
+virtual environment alongside the Python package and build the native
+binary separately:
+
+~~~bash
+python -m pip install -e './src/python[mcp]'
+reaterm-mcp --root /absolute/path/to/test-project
+~~~
+
+The host launches this process and communicates on stdin/stdout. A
+standalone launch will wait for MCP requests. `--root` is required and
+`--binary` or `REATERM_BIN` can select the trusted native executable.
+The regular Python unittest suite uses a fake MCP SDK so `make verify`
+does not require installation of this optional dependency.
+
 ### Targeted checks
 
 ~~~bash

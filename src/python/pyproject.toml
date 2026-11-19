@@ -20,6 +20,10 @@ Issues = "https://github.com/Pro-GenAI/ReaTerm/issues"
 
 [project.optional-dependencies]
 decision = ["openai>=1.0.0"]
+mcp = ["mcp>=2.0,<3"]
+
+[project.scripts]
+reaterm-mcp = "reaterm.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

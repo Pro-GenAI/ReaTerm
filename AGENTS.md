@@ -79,11 +79,20 @@ Every modification must preserve:
 - src/python/: Python 3.11+ interface with optional official openai dependency.
   Package-level `reaterm.run("ls -al", root=".")` shlex-tokenizes a single
   string into argv; class `ReaTerm.run("ls", "-al")` keeps literal-argv behavior.
+- src/python/reaterm/mcp_server.py: stdio MCP server using optional official
+  MCP Python SDK v2 (mcp>=2,<3). It exposes only `run_command`, delegates
+  to the shared strict tool executor, requires an operator-selected
+  `--root`, and optionally accepts a trusted `--binary`. The MCP caller
+  cannot select root/binary, spawn a shell, or run arbitrary executables.
+  The console script is `reaterm-mcp`; test using
+  src/python/tests/test_mcp_server.py with an offline fake SDK.
 - src/python/reaterm/tools/: Python OpenAI Chat Completions / Responses
   and Anthropic Messages tool schemas, plus shared `execute_reaterm_tool`.
   Tool schemas have no required provider SDK. Inputs include exactly a
   native read-only `command` and an `args` string list; the caller owns
-  `root`, `binary`, and model-veto settings. Tool output must be submitted
+  `root`, `binary`, and model-veto settings. The MCP adapter uses the same
+  payload and only stdio transport; its SDK dependency is optional.
+  Tool output must be submitted
   explicitly to the provider. Test in src/python/tests/test_tools.py.
 - src/typescript/: Node.js ESM/TypeScript interface; optional official openai.
   Exported `run("ls -al", options?)` uses quote/whitespace argv parsing;
