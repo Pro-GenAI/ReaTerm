@@ -1,0 +1,2 @@
+# ReaTerm
+Read-only terminal
