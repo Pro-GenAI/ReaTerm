@@ -4,6 +4,15 @@
 
 # ReaTerm
 
+[![PyPI version](https://img.shields.io/pypi/v/reaterm?label=PyPI)](https://pypi.org/project/reaterm/)
+[![npm version](https://img.shields.io/npm/v/reaterm?label=npm)](https://www.npmjs.com/package/reaterm)
+[![MIT license](https://img.shields.io/github/license/Pro-GenAI/ReaTerm?label=license)](LICENSE)
+
+[![Tested Linux x86-64 and ARM64](https://img.shields.io/badge/tested-Linux%20x86--64%20%26%20ARM64-2ea44f)](docs/TESTING.md)
+[![Tested Windows x86-64](https://img.shields.io/badge/tested-Windows%20x86--64-2ea44f)](docs/TESTING.md)
+[![Tested macOS Intel](https://img.shields.io/badge/tested-macOS%20Intel-2ea44f)](docs/TESTING.md)
+[![Tested macOS Apple Silicon M-series](https://img.shields.io/badge/tested-macOS%20Apple%20Silicon%20(M--series)-2ea44f)](docs/TESTING.md)
+
 **Inspect files. Not everything needs a writable shell.**
 
 ReaTerm is a native, read-only terminal built in Rust. Instead of allowing

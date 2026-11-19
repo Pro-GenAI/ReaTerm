@@ -72,6 +72,10 @@ Every modification must preserve:
 - src/rust/src/windows_guard.rs: Windows write-restricted access-token
   enforcement and dedicated disposable file-mutation tests.
 - src/rust/tests/windows_readonly.rs: Windows integration safety matrix.
+- src/rust/tests/security_matrix.rs: cross-platform native integration
+  regressions for traversal/absolute paths in every file reader, denied
+  shells/writes, and informational-flag validation before root access.
+  Disposable fixtures must retain contents, metadata and entry counts.
 - scripts/verify-windows.ps1: native Windows setup/test/verify runner.
 - .github/workflows/windows.yml.disabled: Windows x86-64 verification
   workflow, currently disabled. Do not re-enable without approval.
@@ -97,11 +101,24 @@ Every modification must preserve:
 - src/typescript/: Node.js ESM/TypeScript interface; optional official openai.
   Exported `run("ls -al", options?)` uses quote/whitespace argv parsing;
   class `ReaTerm.run("ls", "-al")` keeps literal-argv behavior.
+- src/python/tests/test_security_matrix.py and
+  src/typescript/test/security-matrix.test.ts: cross-language regression
+  matrices for trusted-root confinement, command allowlists, literal argv,
+  denied native operations and unchanged fixtures. Python offline mocks
+  and TypeScript runtime validation run without a native binary. Native
+  integration cases require REATERM_BIN; no external model calls.
 - README.md, src/python/README.md, src/typescript/README.md and
   docs/website/README.md: public-facing marketing/usage only; never include
   developer setup, test commands, release or deployment instructions.
   Keep short examples truthful, mention the separate native executable,
   and avoid unverified claims of package registry availability.
+  All four READMEs display live PyPI/npm version badges, a GitHub-backed
+  MIT license badge, and four static tested-platform badges (Linux x86-64/
+  ARM64, Windows x86-64, macOS Intel, macOS Apple Silicon M-series).
+  Keep badges linked to official registries and relative LICENSE/TESTING.md
+  paths. Platform badges describe documented coverage, not currently
+  enabled cross-platform CI; never substitute the source package version
+  for an unverified published registry release.
 - docs/DEVELOPMENT.md: setup, build, test and troubleshooting.
 - docs/TOOL_INTEGRATIONS.md: provider schemas, tool-call/result cycles, and confidentiality risks.
 - docs/website/: self-contained, deployable static website (index.html,
@@ -119,8 +136,19 @@ Every modification must preserve:
 - .env.example: safe, up-to-date template for optional decision-model settings;
   never place real API keys in this file.
 - docs/THREAT_MODEL.md: security boundaries and non-goals.
+- .circleci/config.yml: native CircleCI regression pipelines, based on the
+  Agent-RT configuration pattern. Linux x86-64 runs by default; native Linux
+  ARM64 and macOS Apple Silicon (M4 Pro) are default-on parameterized
+  workflows. Windows Server 2022 x86-64 is opt-in with run_windows_ci=true;
+  slow resource stress is opt-in with run_stress=true. Every enabled job
+  runs the actual Rust CLI sandbox and full language/website regression
+  suite; the Unix jobs use sequential make verify and cache registry data.
+  Do not run native sandbox tests in Docker or claim native Raspberry Pi
+  kernel verification from an ARM64 VM. CircleCI-managed Intel macOS
+  executors are retired; Intel verification needs a separately configured
+  self-hosted runner. CI never publishes packages or deploys a website.
 - .github/workflows/ci.yml.disabled: intentionally disabled existing
-  cross-platform CI; do not silently re-enable it.
+  cross-platform GitHub Actions CI; do not silently re-enable it.
 - .github/workflows/publish-pypi.yml: active GitHub-release-triggered PyPI
   Trusted Publishing workflow for the `reaterm` wheel/sdist. Requires
   matching `vVERSION` tag and versions in Python/Rust/npm; tests the

@@ -9,8 +9,11 @@ fixtures.
 
 Use Linux x86-64/ARM64 with Landlock ABI v3+ and seccomp or macOS Intel/
 Apple Silicon with Seatbelt, plus Rust/Cargo, Python 3.11+, Node.js 20+
-and npm. The former four-platform CI matrix passed before it was disabled.
-Both existing CI workflows are currently disabled.
+and npm. The former GitHub Actions four-platform test matrix passed before it was
+disabled; those GitHub Actions test workflows remain disabled. CircleCI is
+configured separately for native Linux x86-64, Linux ARM64, and Apple
+Silicon (with Windows x86-64 opt-in), but runs only after the CircleCI
+project is connected and provisioned. See [DEVELOPMENT.md](DEVELOPMENT.md).
 Do **not** run the test suite as root.
 
 Tests create files in temporary directories and attempt malicious operations
@@ -62,15 +65,32 @@ To run ignored resource stress tests without the wrapper:
 | Rust tests/readonly.rs | Destructive command matrix, unchanged file contents/modes/directory entries |
 | Rust tests/operations.rs | Correct outputs for every supported command, sorted/hidden listings, nested paths, binary data, unusual filenames, content/mode integrity |
 | Rust tests/paths_and_policy.rs | Invalid flags and arity, absolute/parent traversal, escaping symlinks, sockets and directories, malformed operands |
+| Rust tests/security_matrix.rs | Cross-platform executable checks for every file-path reader, early info-flag rejection, denied shells/writes and no stdout or fixture mutation |
 | Rust tests/resource_limits.rs | Exactly 1 MiB stdout vs overflow, oversized files, invalid line counts |
 | Rust tests/resource_limits.rs ignored | 10,001 directory-entry stress test (opt-in) |
 | Python test_convenience.py | Package-level run import, `ls -al` argv splitting, quotes, shell-syntax rejection, native denial |
 | TypeScript convenience.test.ts | ESM top-level export, shell-syntax rejection, native `ls -al` and quoted filenames |
 | Python test_tools.py | OpenAI Chat Completions/Responses and Anthropic tool schemas, strict arguments, literal-argv execution, native denial and optional disposable native integration |
 | Python test_mcp_server.py | MCP stdio server entry point, required trusted root, single read-only tool, strict argv, native denials; mocked optional MCP SDK |
+| Python test_security_matrix.py | Offline eight-command argv and trusted-root checks, strict provider inputs and denied-output handling; native escape and symlink tests when REATERM_BIN is set |
 | Python test_client.py and test_security.py | No shell interpolation, error and timeout handling, native bridge, model veto and missing credentials, fake SDK and environment precedence |
 | TypeScript client.test.ts and security.test.ts | Real native execution, denied mutations and path escape, mode preservation, missing binary, mock local OpenAI endpoint and veto |
-| GitHub Actions smoke step | Release binary reads, rejects destructive commands/unsupported flags/root escapes |
+| TypeScript security-matrix.test.ts | Offline runtime argv validation; native root-confinement checks for every file reader, denied shells/mutations and fixture integrity when REATERM_BIN is set |
+| CircleCI native smoke step | Release binary reads within a disposable root, rejects destructive commands and root escapes, and asserts unchanged canary contents |
+| Disabled GitHub Actions smoke step | Previously checked the same native safety boundaries before the workflow was disabled |
+
+The new cross-language matrices use disposable canary files and assert
+that rejected operations never return successful stdout and leave file
+contents and metadata unchanged. Python and TypeScript native tests require
+REATERM_BIN; Rust integration requires a compiled CLI and OS enforcement.
+
+Targeted regression commands (from the repository root):
+
+~~~bash
+cargo test --manifest-path src/rust/Cargo.toml --test security_matrix
+python3 -m unittest discover -s src/python/tests -p 'test_security_matrix.py' -v
+cd src/typescript && npm run check
+~~~
 
 ## Core security assertions
 
@@ -106,9 +126,12 @@ parent shell can still create or truncate a file using output redirection
 around ReaTerm, before the binary launches. ReaTerm is also not a
 confidentiality boundary: the caller chooses the readable root.
 
-CI runs both ARM64 Linux and ARM64 macOS as well as their x86-64
-counterparts. ARM64 Linux VMs do not establish that your particular
-Raspberry Pi's kernel has Landlock enabled: run the suite on the Pi.
+When the CircleCI project is connected, its default workflows test Linux
+x86-64, Linux ARM64 and Apple Silicon M4 Pro. A separate Windows x86-64
+workflow is opt-in. No CircleCI-hosted macOS Intel executor is currently
+available, so the configuration does not claim live Intel validation.
+ARM64 Linux VMs also do not establish that your particular Raspberry Pi's
+kernel has Landlock enabled: run the suite on the Pi.
 
 ## Future contributions
 
@@ -134,7 +157,8 @@ that would otherwise be read. Readable canary file contents, permissions,
 modification times and directory entries are asserted unchanged.
 Execution root forms --root DIR, --root=DIR and -C DIR are also tested.
 
-These tests run in ordinary CI (cargo test). The executable's own
+These tests are included in CircleCI's native `make verify` jobs once
+its project is connected. The executable's own
 information-only flags work without opening a root or requiring Landlock;
 actual file operations still mandate Landlock and seccomp on Linux.
 
@@ -149,7 +173,9 @@ HTTP delivery. Run:
 
     python -m unittest discover -s docs/website -p "test_*.py" -v
 
-The CI workflows are currently disabled, so run these tests locally.
+The GitHub Actions test workflows remain disabled. CircleCI includes the
+website tests in `make verify` once the project is connected; they can
+also be run locally.
 This test suite validates static files, not a deployed domain, production
 DNS, TLS, or external package registry publication.
 
@@ -172,7 +198,7 @@ successful order, each language's setup/test failure, and `make -j8`:
 
     python3 -m unittest discover -s scripts -p 'test_make*.py' -v
 
-The disabled cross-platform CI workflow previously ran these orchestration
+The disabled cross-platform GitHub Actions workflow previously ran these orchestration
 tests and a real end-to-end verification on Linux. The legacy
 `bash scripts/test.sh [--stress]` entry point remains available.
 
@@ -206,7 +232,8 @@ are refused, path escapes fail, and actual Win32 low-integrity restricted-token 
 modify medium-integrity files with normal DACLs. The optional Windows
 symlink fixture requires Developer Mode or symlink privileges.
 
-The disabled .github/workflows/windows.yml.disabled targeted windows-2022 and
+CircleCI offers an opt-in Windows Server 2022 job using the same PowerShell
+runner. The disabled .github/workflows/windows.yml.disabled targeted windows-2022 and
 publishes a compiled x86-64 .exe artifact after a successful run.
 The prior ci.yml.disabled is intentionally not re-enabled.
 

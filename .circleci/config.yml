@@ -1,0 +1,265 @@
+version: 2.1
+
+# ReaTerm requires the real native Rust binary and the host OS sandbox.
+# Unlike ordinary library tests, do NOT put the native security suite in Docker:
+# container seccomp/LSM restrictions can prevent Landlock installation.
+parameters:
+  run_arm_ci:
+    type: boolean
+    default: true
+  run_mac_ci:
+    type: boolean
+    default: true
+  run_windows_ci:
+    type: boolean
+    default: false
+  run_stress:
+    type: boolean
+    default: false
+
+orbs:
+  win: circleci/windows@5.0.0
+
+executors:
+  linux_x86_64:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+  linux_arm64:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: arm.large
+  apple_silicon:
+    macos:
+      xcode: "27.1.0"
+    resource_class: m4pro.medium
+
+commands:
+  setup_linux:
+    steps:
+      - run:
+          name: Install native Linux development prerequisites
+          command: |
+            set -euo pipefail
+            sudo apt-get update -qq
+            sudo apt-get install -y build-essential curl python3 python3-venv python3-pip
+            python3 -c 'import sys; assert sys.version_info >= (3, 11)'
+
+  setup_macos:
+    steps:
+      - run:
+          name: Install Python 3.12 on Apple Silicon
+          command: |
+            set -euo pipefail
+            test "$(uname -m)" = arm64
+            brew install python@3.12
+            python_bin="$(brew --prefix python@3.12)/libexec/bin"
+            export PATH="$python_bin:$PATH"
+            printf 'export PATH="%s:$PATH"\n' "$python_bin" >> "$BASH_ENV"
+            python3 -c 'import sys; assert sys.version_info >= (3, 11)'
+
+  setup_rust:
+    steps:
+      - run:
+          name: Install stable Rust with rustfmt and Clippy
+          command: |
+            set -euo pipefail
+            if ! command -v rustup >/dev/null 2>&1; then
+              curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
+            fi
+            export PATH="$HOME/.cargo/bin:$PATH"
+            rustup toolchain install stable --profile minimal --component rustfmt,clippy
+            rustup default stable
+            echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$BASH_ENV"
+            rustc --version
+            cargo --version
+
+  setup_node:
+    steps:
+      - run:
+          name: Install Node.js 22 using nvm
+          command: |
+            set -euo pipefail
+            export NVM_DIR="$HOME/.nvm"
+            if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+              curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+            fi
+            . "$NVM_DIR/nvm.sh"
+            nvm install 22 --no-progress
+            nvm use 22
+            cat >> "$BASH_ENV" <<'ENVIRONMENT'
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            nvm use 22 >/dev/null
+            ENVIRONMENT
+            node --version
+            npm --version
+
+  native_unix_regression:
+    parameters:
+      expected_os:
+        type: string
+      expected_arch:
+        type: string
+    steps:
+      - run:
+          name: Confirm native OS and CPU architecture
+          command: |
+            set -euo pipefail
+            test "$(uname -s)" = "<< parameters.expected_os >>"
+            test "$(uname -m)" = "<< parameters.expected_arch >>"
+            echo "Native runner: $(uname -s) $(uname -m)"
+      - restore_cache:
+          keys:
+            - reaterm-cargo-v1-{{ arch }}-{{ checksum "src/rust/Cargo.lock" }}
+      - restore_cache:
+          keys:
+            - reaterm-npm-v1-{{ arch }}-{{ checksum "src/typescript/package-lock.json" }}
+      - run:
+          name: Check Make's fail-fast setup/test order
+          command: |
+            set -euo pipefail
+            python3 -m unittest discover -s scripts -p 'test_make*.py' -v
+      - run:
+          name: Check publishing workflows without publishing
+          command: |
+            set -euo pipefail
+            python3 -m unittest discover -s scripts -p 'test_publish*.py' -v
+      - run:
+          name: Full native Rust -> Python -> TypeScript -> website verification
+          no_output_timeout: 25m
+          command: |
+            set -euo pipefail
+            export REATERM_DECISION_MODEL=
+            make verify
+      - run:
+          name: Smoke-test native sandbox and denied writes
+          command: |
+            set -euo pipefail
+            fixture="$(mktemp -d)"
+            trap 'rm -rf "$fixture"' EXIT
+            printf 'intact\n' > "$fixture/canary.txt"
+            binary="$PWD/src/rust/target/release/reaterm"
+            test "$("$binary" --root "$fixture" cat canary.txt)" = intact
+            if "$binary" --root "$fixture" touch forbidden.txt; then
+              echo 'Unsafe: mutation command was accepted' >&2
+              exit 1
+            fi
+            if "$binary" --root "$fixture" cat ../canary.txt; then
+              echo 'Unsafe: traversal was accepted' >&2
+              exit 1
+            fi
+            test "$(cat "$fixture/canary.txt")" = intact
+            test "$(find "$fixture" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" = 1
+      - save_cache:
+          key: reaterm-cargo-v1-{{ arch }}-{{ checksum "src/rust/Cargo.lock" }}
+          paths:
+            - ~/.cargo/registry
+            - ~/.cargo/git
+      - save_cache:
+          key: reaterm-npm-v1-{{ arch }}-{{ checksum "src/typescript/package-lock.json" }}
+          paths:
+            - ~/.npm
+      - store_artifacts:
+          path: src/rust/target/release/reaterm
+          destination: native-reaterm
+
+jobs:
+  linux_x86_64:
+    executor: linux_x86_64
+    steps:
+      - checkout
+      - setup_linux
+      - setup_rust
+      - setup_node
+      - native_unix_regression:
+          expected_os: Linux
+          expected_arch: x86_64
+      - when:
+          condition: << pipeline.parameters.run_stress >>
+          steps:
+            - run:
+                name: Optional 10001-entry directory limit stress test
+                command: |
+                  set -euo pipefail
+                  cargo test --manifest-path src/rust/Cargo.toml --test resource_limits -- --ignored
+
+  linux_arm64:
+    executor: linux_arm64
+    steps:
+      - checkout
+      - setup_linux
+      - setup_rust
+      - setup_node
+      - native_unix_regression:
+          expected_os: Linux
+          expected_arch: aarch64
+
+  macos_arm64:
+    executor: apple_silicon
+    steps:
+      - checkout
+      - setup_macos
+      - setup_rust
+      - setup_node
+      - native_unix_regression:
+          expected_os: Darwin
+          expected_arch: arm64
+
+  windows_x86_64:
+    executor:
+      name: win/server-2022
+      size: medium
+    steps:
+      - checkout
+      - run:
+          name: Verify Windows x86-64 and required toolchains
+          shell: powershell.exe -ExecutionPolicy Bypass
+          command: |
+            $ErrorActionPreference = 'Stop'
+            if ($env:PROCESSOR_ARCHITECTURE -ne 'AMD64') { throw 'Expected Windows x86-64' }
+            foreach ($tool in @('rustup', 'cargo', 'python', 'npm.cmd')) {
+              if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
+                throw "Missing $tool on Windows image"
+              }
+            }
+            rustup toolchain install stable --component rustfmt,clippy
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            python -c 'import sys; assert sys.version_info >= (3, 11)'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $nodeMajor = [int](& node -p "process.versions.node.split('.')[0]")
+            if ($nodeMajor -lt 20) { throw 'Node.js 20+ is required' }
+            node --version
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - run:
+          name: Full native Windows Rust, Python, TypeScript and website verification
+          shell: powershell.exe -ExecutionPolicy Bypass
+          no_output_timeout: 25m
+          command: |
+            $ErrorActionPreference = 'Stop'
+            $env:REATERM_DECISION_MODEL = ''
+            .\scripts\verify-windows.ps1 -Mode verify
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - store_artifacts:
+          path: src/rust/target/release/reaterm.exe
+          destination: native-reaterm.exe
+
+workflows:
+  linux_ci:
+    jobs:
+      - linux_x86_64
+
+  linux_arm_ci:
+    when: << pipeline.parameters.run_arm_ci >>
+    jobs:
+      - linux_arm64
+
+  apple_silicon_ci:
+    when: << pipeline.parameters.run_mac_ci >>
+    jobs:
+      - macos_arm64
+
+  windows_ci:
+    when: << pipeline.parameters.run_windows_ci >>
+    jobs:
+      - windows_x86_64

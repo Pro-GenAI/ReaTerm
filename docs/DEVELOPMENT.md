@@ -45,7 +45,9 @@ does not require installation of this optional dependency.
 cargo fmt --manifest-path src/rust/Cargo.toml --all -- --check
 cargo clippy --manifest-path src/rust/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src/rust/Cargo.toml
+cargo test --manifest-path src/rust/Cargo.toml --test security_matrix
 python3 -m unittest discover -s src/python/tests -p 'test_*.py' -v
+python3 -m unittest discover -s src/python/tests -p 'test_security_matrix.py' -v
 cd src/typescript && npm install && npm run check
 # Return to the repo root:
 python3 -m unittest discover -s docs/website -p 'test_*.py' -v
@@ -63,6 +65,55 @@ For complete adversarial test coverage and safety prerequisites, see
 [TOOL_INTEGRATIONS.md](TOOL_INTEGRATIONS.md). For website preview, hosting,
 deployment, and site checks, see
 [WEBSITE_DEVELOPMENT.md](WEBSITE_DEVELOPMENT.md).
+
+## CircleCI native continuous integration
+
+The [CircleCI configuration](../.circleci/config.yml) follows the same
+parameterized-workflow approach as Agent-RT but runs ReaTerm's **native Rust
+sandbox** before the Python, TypeScript and website tests. The GitHub Actions
+test workflows remain disabled; this is a separate CI integration.
+
+Connect `Pro-GenAI/ReaTerm` as a CircleCI project with GitHub and use the
+repository's `.circleci/config.yml`. The configuration cannot start jobs
+until the CircleCI project is connected and has access to the required
+resource classes. It does not configure a project automatically.
+
+| Workflow | Executor | Default | Verification |
+| --- | --- | --- | --- |
+| `linux_ci` | Ubuntu 24.04 x86-64 VM | On | Rust Landlock/seccomp, Python, TypeScript, website, scripts |
+| `linux_arm_ci` | Ubuntu 24.04 native ARM64 VM (`arm.large`) | On | Same tests on AArch64 kernel sandbox |
+| `apple_silicon_ci` | macOS Apple Silicon M4 Pro (`m4pro.medium`), Xcode 27.1 | On | Rust Seatbelt, Python, TypeScript, website, scripts |
+| `windows_ci` | Windows Server 2022 x86-64 | Off | Native PowerShell fail-fast runner including Windows token tests |
+
+CircleCI pipeline parameters: `run_arm_ci` and `run_mac_ci` default to
+`true`; `run_windows_ci` defaults to `false` and enables the Windows
+workflow; `run_stress` defaults to `false` and, when enabled, runs the
+10,001-entry listing-limit regression on Linux x86-64. Enable Windows only
+when Windows CircleCI credits/resources are available.
+
+Unix runners install Rust stable with rustfmt/Clippy, Python 3.11+ and Node
+22, run offline Make/release safety tests, then run `make verify` in the
+repository's required Rust → Python → TypeScript → website order. They
+additionally perform a native read/deny smoke test and store the native
+executable as a CircleCI artifact. Dependencies are cached using Cargo
+and npm lockfiles. Set `REATERM_DECISION_MODEL` to empty in the tests so
+no real model provider is contacted. Windows uses
+`scripts/verify-windows.ps1 -Mode verify` and also stores its executable.
+There are no publishing or deployment steps.
+
+**The Linux ARM64 runner is not a Raspberry Pi**: it verifies native
+AArch64 execution and the CI kernel's Landlock/seccomp support, not a Pi's
+4 GB limit or its particular OS configuration. Run the native tests on the
+actual Pi to verify its enforcement. CircleCI's hosted macOS Intel
+executors are retired; macOS Intel requires a separately provisioned
+self-hosted CircleCI runner or manual verification. The static OS badges
+in the READMEs are not real-time CI status indicators.
+
+With the CircleCI CLI installed, validate changes using:
+
+~~~bash
+circleci config validate .circleci/config.yml
+~~~
 
 ## Documentation ownership
 
