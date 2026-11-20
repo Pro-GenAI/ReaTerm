@@ -1,6 +1,6 @@
 {
   "name": "reaterm",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "TypeScript adapter for the ReaTerm native read-only terminal",
   "type": "module",
   "main": "./dist/src/index.js",
