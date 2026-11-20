@@ -87,7 +87,7 @@ commands:
             . "$NVM_DIR/nvm.sh"
             nvm install 22 --no-progress
             nvm use 22
-            cat >> "$BASH_ENV" <<'ENVIRONMENT'
+            cat >> "$BASH_ENV" \<<'ENVIRONMENT'
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
             nvm use 22 >/dev/null
