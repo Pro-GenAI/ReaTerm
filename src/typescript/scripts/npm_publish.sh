@@ -123,7 +123,10 @@ const packs = JSON.parse(fs.readFileSync(manifest, "utf8"));
 if (packs.length !== 1 || packs[0].name !== name || packs[0].version !== version)
   throw Error("npm pack metadata disagrees with package.json");
 const files = new Set(packs[0].files.map(f => f.path));
-for (const required of ["dist/src/index.js", "dist/src/index.d.ts", "README.md", "package.json"]) {
+for (const required of ["dist/src/index.js", "dist/src/index.d.ts",
+                        "dist/src/tools.js", "dist/src/tools.d.ts",
+                        "dist/src/mcp-server.js", "dist/src/mcp-server.d.ts",
+                        "README.md", "package.json"]) {
   if (!files.has(required)) throw Error("Missing expected npm file: " + required);
 }
 for (const name of files) {

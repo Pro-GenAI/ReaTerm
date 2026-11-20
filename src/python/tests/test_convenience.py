@@ -13,17 +13,16 @@ from reaterm import ReaTermError, run
 class ConvenienceTests(unittest.TestCase):
     def test_package_level_import_and_split(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
-            with patch("reaterm.client.subprocess.run") as execute:
+            with patch("reaterm.client._capture_capped") as execute:
                 execute.return_value.returncode = 0
                 execute.return_value.stdout = "listing\n"
                 self.assertIs(run, reaterm.run)
                 self.assertEqual(run("ls -al", root=".", binary="/bin/reaterm"), "listing\n")
                 self.assertEqual(execute.call_args.args[0][-2:], ["ls", "-al"])
-                self.assertFalse(execute.call_args.kwargs["shell"])
 
     def test_quoted_path_preserved_as_one_operand(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
-            with patch("reaterm.client.subprocess.run") as execute:
+            with patch("reaterm.client._capture_capped") as execute:
                 execute.return_value.returncode = 0
                 execute.return_value.stdout = "contents"
                 self.assertEqual(run('cat "file name.txt"', binary="reaterm"), "contents")
@@ -36,7 +35,7 @@ class ConvenienceTests(unittest.TestCase):
             "ls & cat", "ls \x60whoami\x60", "ls\\",
             '"" ls', None, 123,
         ]
-        with patch("reaterm.client.subprocess.run") as execute:
+        with patch("reaterm.client._capture_capped") as execute:
             for command_line in invalid:
                 with self.subTest(command_line=command_line):
                     with self.assertRaises(ValueError):
@@ -45,7 +44,7 @@ class ConvenienceTests(unittest.TestCase):
 
     def test_native_denial_propagates(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
-            with patch("reaterm.client.subprocess.run") as execute:
+            with patch("reaterm.client._capture_capped") as execute:
                 execute.return_value.returncode = 2
                 execute.return_value.stderr = "denied"
                 with self.assertRaises(ReaTermError):

@@ -20,7 +20,7 @@ if ! command -v cargo >/dev/null 2>&1; then
   exit 2
 fi
 
-cargo install --path "$ROOT/src/rust" --force
+cargo install --locked --path "$ROOT/src/rust" --force
 INSTALL_ROOT="$(printenv CARGO_INSTALL_ROOT || printenv CARGO_HOME || printf '%s' "$HOME/.cargo")"
 INSTALLED="$INSTALL_ROOT/bin/reaterm"
 

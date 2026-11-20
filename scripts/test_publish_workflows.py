@@ -104,6 +104,8 @@ if args[:1] == ["pack"]:
     package = json.loads(Path("package.json").read_text(encoding="utf-8"))
     data = [{"name": package["name"], "version": package["version"], "files": [
         {"path": x} for x in ["dist/src/index.js", "dist/src/index.d.ts",
+                              "dist/src/tools.js", "dist/src/tools.d.ts",
+                              "dist/src/mcp-server.js", "dist/src/mcp-server.d.ts",
                               "README.md", "package.json"]]}]
     if os.environ.get("MOCK_BAD_PACK") == "1":
         data[0]["files"].pop(0)

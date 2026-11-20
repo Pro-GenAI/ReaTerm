@@ -239,20 +239,39 @@ pub(crate) fn enforce_read_only() -> Result<(), String> {
         return Err(win_error("AllocateAndInitializeSid(low integrity)"));
     }
     let low_sid = OwnedSid(low_sid_ptr);
-    let label = SidAndAttributes {
-        sid: low_sid.0,
-        attributes: SE_GROUP_INTEGRITY,
-    };
-    // TOKEN_MANDATORY_LABEL contains exactly one SID_AND_ATTRIBUTES.
-    // SAFETY: label and its SID are live; the token allows adjustment of
-    // its default integrity level. The new level is strictly lower.
-    let label_size =
-        std::mem::size_of::<SidAndAttributes>() as u32 + unsafe { GetLengthSid(low_sid.0) };
+    // TOKEN_MANDATORY_LABEL is a SID_AND_ATTRIBUTES followed by the
+    // actual SID bytes. A pointer to a stack-only SID_AND_ATTRIBUTES with
+    // a larger advertised length would let Windows read out of bounds.
+    let sid_length = unsafe { GetLengthSid(low_sid.0) } as usize;
+    let header_length = std::mem::size_of::<SidAndAttributes>();
+    let total_length = header_length
+        .checked_add(sid_length)
+        .ok_or("Windows integrity label size overflow")?;
+    let label_size = u32::try_from(total_length).map_err(|_| "Windows integrity label too large")?;
+    // Vec<usize> ensures pointer-size alignment for SID_AND_ATTRIBUTES;
+    // the SID payload is copied immediately after that header.
+    let words = total_length.div_ceil(std::mem::size_of::<usize>());
+    let mut label_storage = vec![0usize; words];
+    let label_ptr = label_storage.as_mut_ptr().cast::<SidAndAttributes>();
+    // SAFETY: the allocated buffer is aligned and large enough for both
+    // the header and SID bytes. The embedded pointer refers to those bytes
+    // in the same live buffer for SetTokenInformation.
+    unsafe {
+        let sid_dest = label_ptr.cast::<u8>().add(header_length);
+        ptr::copy_nonoverlapping(low_sid.0.cast::<u8>(), sid_dest, sid_length);
+        ptr::write(
+            label_ptr,
+            SidAndAttributes {
+                sid: sid_dest.cast(),
+                attributes: SE_GROUP_INTEGRITY,
+            },
+        );
+    }
     if unsafe {
         SetTokenInformation(
             limited_token.0,
             TOKEN_INTEGRITY_LEVEL,
-            (&label as *const SidAndAttributes).cast(),
+            label_ptr.cast(),
             label_size,
         )
     } == 0

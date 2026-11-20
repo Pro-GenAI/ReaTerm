@@ -33,6 +33,9 @@ fn deny(root: &TempDir, args: &[&str]) {
 fn rejects_wrong_arity_and_unsupported_options() {
     let root = tempfile::tempdir().unwrap();
     fs::write(root.path().join("file"), "content\n").unwrap();
+    // Without explicit separator-state tracking, -- can be mistaken for
+    // a filename here and these incomplete commands would succeed.
+    fs::write(root.path().join("--"), "literal separator file\n").unwrap();
     let denied: &[&[&str]] = &[
         &[],
         &["pwd", "extra"],
@@ -40,7 +43,7 @@ fn rejects_wrong_arity_and_unsupported_options() {
         &["ls", "--recursive"],
         &["ls", "-alR"],
         &["ls", "file", "file"],
-        &["ls", "--", "file"],
+        &["ls", "--", "file", "file"],
         &["cat"],
         &["cat", "-n", "file"],
         &["head"],
@@ -48,6 +51,12 @@ fn rejects_wrong_arity_and_unsupported_options() {
         &["head", "-n", "100001", "file"],
         &["head", "-n", "-1", "file"],
         &["head", "file", "extra"],
+        &["head", "--"],
+        &["head", "-n", "1", "--"],
+        &["tail", "--"],
+        &["tail", "-n", "1", "--"],
+        &["wc", "--"],
+        &["wc", "-l", "--"],
         &["tail", "-n", "NaN", "file"],
         &["tail", "-n", "100001", "file"],
         &["wc"],
@@ -56,7 +65,7 @@ fn rejects_wrong_arity_and_unsupported_options() {
         &["grep", "-r", "content", "."],
         &["grep", "-e", "content", "file"],
         &["grep", "content"],
-        &["grep", "content", "file", "file"],
+        &["grep", "content", "file", "--missing"],
         &["stat"],
         &["stat", "-f", "file"],
         &["stat", "file", "file"],
@@ -180,5 +189,48 @@ fn root_and_help_errors_are_explicit() {
     for arg in ["--help", "--version"] {
         let out = Command::new(exe).arg(arg).output().unwrap();
         assert!(out.status.success());
+    }
+}
+
+
+#[test]
+fn fifos_are_rejected_without_waiting_for_a_writer() {
+    use std::ffi::CString;
+    use std::os::unix::ffi::OsStrExt;
+    use std::process::Stdio;
+    use std::time::{Duration, Instant};
+
+    let root = tempfile::tempdir().unwrap();
+    let fifo_path = root.path().join("named_pipe");
+    let path = CString::new(fifo_path.as_os_str().as_bytes()).unwrap();
+    assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
+    for args in [
+        vec!["cat", "named_pipe"],
+        vec!["head", "named_pipe"],
+        vec!["tail", "named_pipe"],
+        vec!["wc", "named_pipe"],
+        vec!["grep", "x", "named_pipe"],
+    ] {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_reaterm"))
+            .arg("--root")
+            .arg(root.path())
+            .args(&args)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                assert_eq!(status.code(), Some(2), "{args:?}");
+                break;
+            }
+            if Instant::now() >= deadline {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("Fifo read blocked instead of rejecting: {args:?}");
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
     }
 }

@@ -10,11 +10,82 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import threading
 from typing import Optional
 
 
 class ReaTermError(RuntimeError):
     """An execution failure or denied decision."""
+
+
+MAX_CAPTURE_BYTES = 2 * 1024 * 1024
+
+
+def _capture_capped(
+    argv: list[str], *, timeout: float
+) -> subprocess.CompletedProcess[str]:
+    """Capture both child streams concurrently with a shared hard byte cap.
+
+    The native CLI is itself output-bounded, but a substituted or corrupted
+    executable must not be able to exhaust the Python wrapper's memory.
+    """
+    child = subprocess.Popen(
+        argv, shell=False, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    )
+    captured = [bytearray(), bytearray()]
+    lock = threading.Lock()
+    exceeded = threading.Event()
+    total = 0
+
+    def collect(stream, destination: bytearray) -> None:
+        nonlocal total
+        try:
+            while True:
+                chunk = stream.read(65536)
+                if not chunk:
+                    break
+                with lock:
+                    remaining = MAX_CAPTURE_BYTES - total
+                    destination.extend(chunk[:remaining])
+                    total += min(len(chunk), remaining)
+                    if len(chunk) > remaining:
+                        exceeded.set()
+                if exceeded.is_set():
+                    try:
+                        child.kill()
+                    except OSError:
+                        pass
+                    break
+        finally:
+            stream.close()
+
+    assert child.stdout is not None and child.stderr is not None
+    readers = [
+        threading.Thread(target=collect, args=(child.stdout, captured[0]), daemon=True),
+        threading.Thread(target=collect, args=(child.stderr, captured[1]), daemon=True),
+    ]
+    for reader in readers:
+        reader.start()
+    try:
+        status = child.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.wait()
+        raise
+    finally:
+        for reader in readers:
+            reader.join(timeout=1)
+    if exceeded.is_set():
+        raise ReaTermError("ReaTerm output exceeds 2 MiB client capture limit")
+    if any(reader.is_alive() for reader in readers):
+        raise ReaTermError("ReaTerm output pipes did not close")
+    return subprocess.CompletedProcess(
+        argv,
+        status,
+        captured[0].decode("utf-8", errors="replace"),
+        captured[1].decode("utf-8", errors="replace"),
+    )
 
 
 def _binary_path(explicit: Optional[str]) -> str:
@@ -24,12 +95,14 @@ def _binary_path(explicit: Optional[str]) -> str:
     if configured:
         return configured
     # Editable/source checkout convenience: project/src/python/reaterm/client.py
-    repo = Path(__file__).resolve().parents[3]
-    for profile in ("release", "debug"):
-        native_name = "reaterm.exe" if os.name == "nt" else "reaterm"
-        candidate = repo / "src" / "rust" / "target" / profile / native_name
-        if candidate.is_file():
-            return str(candidate)
+    resolved = Path(__file__).resolve()
+    if len(resolved.parents) > 3:
+        repo = resolved.parents[3]
+        for profile in ("release", "debug"):
+            native_name = "reaterm.exe" if os.name == "nt" else "reaterm"
+            candidate = repo / "src" / "rust" / "target" / profile / native_name
+            if candidate.is_file():
+                return str(candidate)
     installed = shutil.which("reaterm")
     if installed:
         return installed
@@ -76,7 +149,7 @@ class ReaTerm:
         if base_url:
             kwargs["base_url"] = base_url
         try:
-            client = OpenAI(**kwargs)
+            client = OpenAI(**kwargs, timeout=self.timeout, max_retries=0)
             result = client.chat.completions.create(
                 model=self.decision_model,
                 messages=[
@@ -112,14 +185,7 @@ class ReaTerm:
         self._model_allows(tokens)
         argv = [_binary_path(self.binary), "--root", self.root, *tokens]
         try:
-            completed = subprocess.run(
-                argv,
-                shell=False,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-                check=False,
-            )
+            completed = _capture_capped(argv, timeout=self.timeout)
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise ReaTermError(f"ReaTerm execution failed: {exc}") from exc
         if completed.returncode:

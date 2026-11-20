@@ -12,7 +12,7 @@ parameters:
     default: true
   run_windows_ci:
     type: boolean
-    default: false
+    default: true
   run_stress:
     type: boolean
     default: false
@@ -114,7 +114,7 @@ commands:
             - reaterm-cargo-v1-{{ arch }}-{{ checksum "src/rust/Cargo.lock" }}
       - restore_cache:
           keys:
-            - reaterm-npm-v1-{{ arch }}-{{ checksum "src/typescript/package-lock.json" }}
+            - reaterm-npm-v1-{{ arch }}-{{ checksum "src/typescript/package.json" }}
       - run:
           name: Check Make's fail-fast setup/test order
           command: |
@@ -157,7 +157,7 @@ commands:
             - ~/.cargo/registry
             - ~/.cargo/git
       - save_cache:
-          key: reaterm-npm-v1-{{ arch }}-{{ checksum "src/typescript/package-lock.json" }}
+          key: reaterm-npm-v1-{{ arch }}-{{ checksum "src/typescript/package.json" }}
           paths:
             - ~/.npm
       - store_artifacts:

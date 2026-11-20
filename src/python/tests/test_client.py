@@ -10,7 +10,7 @@ from reaterm import ReaTerm, ReaTermError
 
 class ClientTests(unittest.TestCase):
     def test_uses_argv_not_shell(self):
-        with patch("reaterm.client.subprocess.run") as run:
+        with patch("reaterm.client._capture_capped") as run:
             run.return_value.returncode = 0
             run.return_value.stdout = "hello\n"
             with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
@@ -18,10 +18,9 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(value, "hello\n")
             argv = run.call_args.args[0]
             self.assertEqual(argv[-2:], ["cat", "file;touch PWNED"])
-            self.assertIs(run.call_args.kwargs["shell"], False)
 
     def test_rejects_failed_native_operation(self):
-        with patch("reaterm.client.subprocess.run") as run:
+        with patch("reaterm.client._capture_capped") as run:
             run.return_value.returncode = 2
             run.return_value.stderr = "reaterm: denied"
             with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):

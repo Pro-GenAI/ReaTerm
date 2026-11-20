@@ -5,10 +5,30 @@ orchestration, platform verification, publishing and deployment belong in
 developer documentation—not in README landing pages. Every README is a
 **user-facing product overview** with benefits and short usage examples.
 
-## Developer quick start
+## Source installation and prerequisites
 
 Install Rust/Cargo, Python 3.11+, Node.js 20+ and your platform's required
-native sandbox facilities. From the repository root:
+native sandbox facilities. Linux requires Landlock ABI v3 (approximately kernel
+6.2+) and seccomp. ReaTerm fails closed when required sandbox facilities are
+missing. The wrapper packages do not contain the native executable.
+
+~~~bash
+git clone https://github.com/Pro-GenAI/ReaTerm.git
+cd ReaTerm
+cargo install --locked --path src/rust
+python -m pip install -e ./src/python
+# Optional TypeScript/Node adapter:
+(cd src/typescript && npm install --no-audit --no-fund && npm run build)
+~~~
+
+Ensure Cargo's binary directory is on `PATH` or set `REATERM_BIN` to the
+installed native executable. The repository's current native dependency lock
+uses the patched cap-std and cap-primitives 3.4.6 releases. Package
+publication to PyPI/npm has not been verified.
+
+## Developer quick start
+
+From the repository root:
 
 ~~~bash
 make setup           # Build Rust, provision Python, install npm dependencies
@@ -22,8 +42,8 @@ require supported OS enforcement. Do not run sandbox tests as root.
 
 ### MCP adapter development
 
-The MCP server is a Python-only stdio adapter; it does not modify the
-native command set. The `mcp` extra uses the official MCP Python SDK
+The Python and TypeScript packages each provide a local stdio MCP
+adapter; neither modifies the native command set. The `mcp` extra uses the official MCP Python SDK
 v2 (`MCPServer` API). To exercise the real protocol, install it in a
 virtual environment alongside the Python package and build the native
 binary separately:
@@ -36,8 +56,19 @@ reaterm-mcp --root /absolute/path/to/test-project
 The host launches this process and communicates on stdin/stdout. A
 standalone launch will wait for MCP requests. `--root` is required and
 `--binary` or `REATERM_BIN` can select the trusted native executable.
-The regular Python unittest suite uses a fake MCP SDK so `make verify`
-does not require installation of this optional dependency.
+The fast Python unittest suite retains isolated handler mocks. The
+authoritative MCP protocol tests use `pytest-mcptest==0.1.1` (MCP v2),
+which starts the actual Python stdio server and drives it with a real client.
+`make verify` installs the Python `[mcp-test]` extra and runs those tests
+after the unittests; the Windows PowerShell runner does the same. The
+TypeScript MCP tests use `@modelcontextprotocol/client` v2, with linked
+in-memory transports for invalid schemas and a child-process stdio
+transport for handshake, native access, and the offline model-veto
+regression. No JSON-RPC framing is simulated by hand; no external model
+provider is contacted. The native Rust binary must still be installed
+separately. Node.js MCP clients can invoke
+`reaterm-mcp --root /absolute/path/to/test-project` from the package bin;
+`--binary` optionally selects the trusted native executable.
 
 ### Targeted checks
 
@@ -48,6 +79,8 @@ cargo test --manifest-path src/rust/Cargo.toml
 cargo test --manifest-path src/rust/Cargo.toml --test security_matrix
 python3 -m unittest discover -s src/python/tests -p 'test_*.py' -v
 python3 -m unittest discover -s src/python/tests -p 'test_security_matrix.py' -v
+# After pip install -e './src/python[mcp-test]' and native CLI setup:
+REATERM_BIN="$PWD/src/rust/target/release/reaterm" python3 -m pytest -q src/python/mcp_tests
 cd src/typescript && npm install && npm run check
 # Return to the repo root:
 python3 -m unittest discover -s docs/website -p 'test_*.py' -v
@@ -83,13 +116,13 @@ resource classes. It does not configure a project automatically.
 | `linux_ci` | Ubuntu 24.04 x86-64 VM | On | Rust Landlock/seccomp, Python, TypeScript, website, scripts |
 | `linux_arm_ci` | Ubuntu 24.04 native ARM64 VM (`arm.large`) | On | Same tests on AArch64 kernel sandbox |
 | `apple_silicon_ci` | macOS Apple Silicon M4 Pro (`m4pro.medium`), Xcode 27.1 | On | Rust Seatbelt, Python, TypeScript, website, scripts |
-| `windows_ci` | Windows Server 2022 x86-64 | Off | Native PowerShell fail-fast runner including Windows token tests |
+| `windows_ci` | Windows Server 2022 x86-64 | On | Native PowerShell fail-fast runner including Windows token tests |
 
 CircleCI pipeline parameters: `run_arm_ci` and `run_mac_ci` default to
-`true`; `run_windows_ci` defaults to `false` and enables the Windows
-workflow; `run_stress` defaults to `false` and, when enabled, runs the
-10,001-entry listing-limit regression on Linux x86-64. Enable Windows only
-when Windows CircleCI credits/resources are available.
+`true`, including `run_windows_ci`; `run_stress` defaults to `false`
+and, when enabled, runs the 10,001-entry listing-limit regression on Linux
+x86-64. The default Windows workflow requires usable Windows CircleCI
+credits/resources and must be monitored for native support.
 
 Unix runners install Rust stable with rustfmt/Clippy, Python 3.11+ and Node
 22, run offline Make/release safety tests, then run `make verify` in the
@@ -478,8 +511,10 @@ Install from the repository root:
     python -c 'from reaterm import ReaTerm; print(ReaTerm(root=".").run("ls", "-la"))'
 
 ReaTerm.run(command, *args) returns stdout, raises ReaTermError on denied
-operations, failed subprocesses or timeouts, and invokes subprocess.run with
-an argv array and shell=False. Binary lookup order: explicit binary option,
+operations, failed subprocesses or timeouts, and invokes subprocess.Popen with
+an argv array and shell=False. Both output streams have a combined 2 MiB
+capture cap and invalid UTF-8 is decoded with replacement characters.
+Binary lookup order: explicit binary option,
 REATERM_BIN, source-checkout target, then PATH. A deployment should pin a
 trusted absolute binary path.
 
@@ -776,9 +811,10 @@ Keep the versions aligned in:
 - `src/rust/Cargo.toml` — Rust crate and executable name `reaterm`
 - `src/typescript/package.json` — unscoped npm package name `reaterm`
 
-Run `temp/update-versions.sh` to increment the patch version, or pass an explicit
-`major.minor.patch` version. It updates the three manifests and their Rust and
-npm lockfiles; it does not publish anything.
+Run `scripts/update-versions.sh` to increment the patch version, or pass an explicit
+`major.minor.patch` version. It updates the three manifests, the Rust
+Cargo.lock, and the npm lockfile only if one is present; it does not
+publish anything. The default checkout does not commit package-lock.json.
 
 Use a GitHub release tag matching the version, e.g. `v0.1.0`. A mismatch
 between any version and the release tag prevents PyPI publication. Run
@@ -853,3 +889,28 @@ The script publishes by default; `--dry-run` prevents uploading.
 Published package name, version and repository homepage come
 from the checked-in `src/typescript/package.json`.
 
+
+## Security hardening and distribution status
+
+Native Linux Landlock read permission is restricted to the operator-selected
+`root_path`; Linux seccomp additionally denies process spawning, socket
+creation/connection, io_uring setup, ftruncate, metadata changes and mounts.
+The native read API streams `head`, `tail` and `grep` and keeps the 10 MiB
+file and 1 MiB output caps; `grep` now accepts up to 128 explicit files.
+Ordinary `make verify` includes the added seccomp, filename, lexer and
+SDK regression tests, but not opt-in stress/fault-injection tests.
+
+The Windows native path remains capability-scoped through cap-std. Unlike
+Unix, cap-std's OpenOptionsExt does not expose a Windows
+`FILE_FLAG_OPEN_REPARSE_POINT` control. Do not substitute an absolute-path
+`std::fs::OpenOptions` open, which would compromise confinement.
+Windows content opens continue to reject inspected final symlinks and check
+the opened file type; an atomic Windows no-follow enhancement requires
+a capability-relative implementation and native Windows race tests.
+
+Neither the Python distribution nor the npm distribution currently bundles
+platform-native Rust executables. Platform-specific wheels and optional npm
+binary packages require reproducible native builds, signing, wheel/npm
+installation tests for each supported platform and a separately authorized
+publishing action. Do not claim toolchain-free installation until those
+artifacts have been produced and tested.

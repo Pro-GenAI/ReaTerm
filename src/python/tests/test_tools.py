@@ -51,7 +51,7 @@ class ProviderSchemas(unittest.TestCase):
 class Execution(unittest.TestCase):
     def test_openai_json_and_anthropic_mapping_dispatch_exact_argv(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             execute.return_value.returncode = 0
             execute.return_value.stdout = "contents\n"
@@ -66,11 +66,10 @@ class Execution(unittest.TestCase):
                     )
                     self.assertEqual(execute.call_args.args[0][-2:], ["ls", "-al"])
                     self.assertEqual(execute.call_args.args[0][1], "--root")
-                    self.assertFalse(execute.call_args.kwargs["shell"])
 
     def test_literal_argv_metacharacters_are_not_shell_executed(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             execute.return_value.returncode = 0
             execute.return_value.stdout = "safe\n"
@@ -80,7 +79,6 @@ class Execution(unittest.TestCase):
                 "safe\n",
             )
             self.assertEqual(execute.call_args.args[0][-2:], ["cat", filename])
-            self.assertFalse(execute.call_args.kwargs["shell"])
 
     def test_invalid_model_inputs_rejected_before_native_execution(self):
         invalid = [
@@ -100,7 +98,7 @@ class Execution(unittest.TestCase):
 
     def test_native_denial_propagates(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             execute.return_value.returncode = 2
             execute.return_value.stderr = "denied"

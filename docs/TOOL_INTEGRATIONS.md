@@ -1,4 +1,4 @@
-# ReaTerm AI tool integrations (Python and MCP)
+# ReaTerm AI tool integrations (Python, TypeScript and MCP)
 
 ReaTerm provides JSON schemas that can be passed to the official OpenAI
 and Anthropic Python SDKs. A model can request a read-only inspection
@@ -15,6 +15,39 @@ A tool request has the same shape with both providers:
 The application, not the model, selects the root directory (default ".").
 Install the Rust CLI separately or set REATERM_BIN. The provider SDKs are
 optional dependencies, not needed merely to import schemas.
+
+## Node.js/TypeScript provider schemas and stdio MCP
+
+The TypeScript package also exports `reatermToolOpenAI`,
+`reatermToolOpenAIResponses`, `reatermToolAnthropic` and
+`executeReatermTool`. The input schema is strict, with exactly a permitted
+`command` and an `args` string array. Provider requests do not trigger
+execution: the host must call the executor itself and submit the returned
+output explicitly.
+
+~~~ts
+import { reatermToolOpenAI, executeReatermTool } from "reaterm";
+
+// Provide reatermToolOpenAI to your model's tools list.
+// Once a model emits JSON function arguments:
+const output = await executeReatermTool(
+  '{"command":"cat","args":["README.md"]}',
+  { root: "/trusted/project", binary: "/trusted/bin/reaterm" },
+);
+// Submit output using the provider's tool-call identifier.
+~~~
+
+The npm package provides an optional local stdio MCP executable named
+`reaterm-mcp` (using `@modelcontextprotocol/server` v2 and Zod v4).
+The server accepts `--root ABSOLUTE_OR_RELATIVE_DIRECTORY` and optional
+`--binary EXECUTABLE` at trusted startup, registers only `run_command`,
+and never exposes these settings in the model-controlled tool schema.
+Install the native CLI separately; the npm wrapper does not bundle it.
+The TypeScript server and schemas return untrusted file data, which must not
+be treated as instructions. The MCP command executor inherits the operator's
+`REATERM_DECISION_MODEL` and provider credential environment variables:
+a configured veto with missing credentials **rejects** the tool call.
+Neither the host nor the MCP handler silently disables the veto.
 
 ## OpenAI Chat Completions
 
@@ -140,13 +173,13 @@ The Python package also provides a local MCP server with one tool,
 native Rust executable used by the OpenAI/Anthropic adapters. No shell,
 HTTP listener or arbitrary subprocess command is introduced.
 
-Install the optional official MCP Python SDK v2 and the Python wrapper,
-then install/build the native Rust CLI separately:
+Install the optional official MCP Python SDK v2 from a repository
+checkout; registry availability has not been verified. Install the native
+Rust CLI separately:
 
 ~~~sh
-python -m pip install 'reaterm[mcp]'
-# In a source checkout, instead use:
-# python -m pip install -e './src/python[mcp]'
+cargo install --locked --path src/rust
+python -m pip install -e './src/python[mcp]'
 ~~~
 
 Configure a compatible MCP host to launch the server over stdio. For clients
@@ -189,3 +222,29 @@ selected root and may send returned content to an external model. Only
 expose a minimal directory without credentials or other data that the
 client is not permitted to see. Optional ReaTerm decision-model vetos
 remain controlled by the launching environment.
+
+
+## Prompt-injection and information-flow precautions
+
+File inspection is *read-only*, not *instruction-safe*. A README, log or source
+comment may contain model-directed instructions that try to override the user's
+intent, cause another tool to make a network request, or leak file data.
+Treat all ReaTerm tool results as untrusted content. The application should
+maintain a clear instruction/data boundary, restrict unrelated action tools,
+limit roots to approved non-sensitive files, and authorize all outbound tool
+calls independently. Neither the optional veto model nor the fixed command
+allowlist can enforce those rules for the whole agent.
+
+The command string in the public convenience API is parsed without a shell.
+The OpenAI/Anthropic/MCP schemas already accept a structured command enum and
+an array of exact argv strings, so model-generated commands do not need
+shell quoting. Prefer `ReaTerm.run("cat", "file with spaces.txt")` for
+literal filenames in trusted application code.
+
+The native policy denies common credential filenames and directory names by
+default, including `.env`, `.ssh`, `.aws`, private-key extensions and
+Terraform state files. It is not content classification or output redaction:
+secrets embedded in ordinary readable files remain visible. The Python/Node
+wrappers default to 15-second native subprocess wall timeouts. The native
+Unix process has a 10-second CPU budget, but unusual filesystem I/O can
+still block. See [the threat model](THREAT_MODEL.md).

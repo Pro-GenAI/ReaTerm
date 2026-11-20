@@ -33,3 +33,6 @@ node_modules/
 # Prevent accidentally staging npm credentials from older publishing helpers
 /src/typescript/.npmrc
 /src/typescript/.npmrc.publish
+
+# Scratch files (release helpers live in scripts/)
+/temp/

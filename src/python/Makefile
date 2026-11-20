@@ -26,12 +26,13 @@ verify:
 else
 setup:
 	$(PYTHON) -m venv "$(VENV_DIR)"
-	"$(VENV_PYTHON)" -m pip install --disable-pip-version-check -e .
+	"$(VENV_PYTHON)" -m pip install --disable-pip-version-check -e '.[mcp-test]'
 
 test:
 	@test -x "$(VENV_PYTHON)" || { echo 'Python virtualenv missing; run make setup first' >&2; exit 1; }
 	@test -x "$(REATERM_BIN)" || { echo 'Native Rust binary missing; run make -C src/rust setup first (from the repository root)' >&2; exit 1; }
 	@REATERM_DECISION_MODEL= REATERM_BIN="$(REATERM_BIN)" "$(VENV_PYTHON)" -m unittest discover -s tests -p 'test_*.py' -v
+	@REATERM_DECISION_MODEL= REATERM_BIN="$(REATERM_BIN)" "$(VENV_PYTHON)" -m pytest -q mcp_tests
 
 verify:
 	@$(MAKE) setup

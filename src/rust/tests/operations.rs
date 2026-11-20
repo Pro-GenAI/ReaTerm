@@ -166,3 +166,41 @@ fn relative_nested_files_and_default_root_work() {
     assert!(output.status.success());
     assert_eq!(output.stdout, b"nested\n");
 }
+
+#[test]
+fn explicit_end_of_options_and_multifile_literal_grep() {
+    let root = tempfile::tempdir().unwrap();
+    fs::write(root.path().join("-n"), "First\nNeedle\n").unwrap();
+    fs::write(root.path().join("-i"), "needle\n").unwrap();
+    fs::write(root.path().join("normal"), "OTHER\n").unwrap();
+
+    assert_eq!(success(&root, &["cat", "--", "-n"]), "First\nNeedle\n");
+    assert_eq!(success(&root, &["head", "--", "-n"]), "First\nNeedle\n");
+    assert_eq!(success(&root, &["tail", "-n", "1", "--", "-n"]), "Needle\n");
+    assert_eq!(success(&root, &["wc", "-l", "--", "-n"]), "2 -n\n");
+    assert!(success(&root, &["stat", "--", "-n"]).contains("type=file"));
+    assert_eq!(success(&root, &["ls", "--", "-n"]), "-n\n");
+    assert_eq!(success(&root, &["grep", "--", "-n", "-i"]), "");
+    assert_eq!(
+        success(&root, &["grep", "-ni", "--", "needle", "-n", "-i"]),
+        "-n:2:Needle\n-i:1:needle\n"
+    );
+    assert_eq!(success(&root, &["grep", "-i", "other", "normal"]), "OTHER\n");
+    fs::write(root.path().join("--"), "literal delimiter\n").unwrap();
+    assert_eq!(success(&root, &["head", "--", "--"]), "literal delimiter\n");
+    assert_eq!(success(&root, &["tail", "--", "--"]), "literal delimiter\n");
+    assert_eq!(success(&root, &["wc", "-l", "--", "--"]), "1 --\n");
+    assert_eq!(success(&root, &["cat", "--", "--"]), "literal delimiter\n");
+}
+
+#[test]
+fn grep_case_insensitive_matching_respects_unicode_word_context() {
+    let root = tempfile::tempdir().unwrap();
+    // Uppercase Greek sigma lowercases differently at the end of a word.
+    // Per-character lowercasing loses the contextual final-sigma mapping.
+    fs::write(root.path().join("greek.txt"), "ΟΣ\n").unwrap();
+    assert_eq!(
+        success(&root, &["grep", "-i", "ος", "greek.txt"]),
+        "ΟΣ\n"
+    );
+}

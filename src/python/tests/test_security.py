@@ -35,26 +35,24 @@ def fake_openai(reply="ALLOW", error=None):
 class SecurityAdapterTests(unittest.TestCase):
     def test_args_not_shell_interpreted_or_split(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
-            with patch("reaterm.client.subprocess.run") as execute:
+            with patch("reaterm.client._capture_capped") as execute:
                 execute.return_value.returncode = 0
                 execute.return_value.stdout = "safe\n"
                 argv = ("cat", "$(touch HACK)", "; rm -rf .", "file name")
                 value = ReaTerm(binary="/opt/greaterm", root=".").run(*argv)
                 self.assertEqual(value, "safe\n")
                 self.assertEqual(execute.call_args.args[0][-len(argv):], list(argv))
-                self.assertIs(execute.call_args.kwargs["shell"], False)
-                self.assertIs(execute.call_args.kwargs["check"], False)
 
     def test_broken_native_binary_fails_closed(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
-            with patch("reaterm.client.subprocess.run", side_effect=FileNotFoundError("missing")):
+            with patch("reaterm.client._capture_capped", side_effect=FileNotFoundError("missing")):
                 with self.assertRaisesRegex(ReaTermError, "execution failed"):
                     ReaTerm(binary="missing").run("ls")
 
     def test_native_timeout_fails_closed(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
             with patch(
-                "reaterm.client.subprocess.run",
+                "reaterm.client._capture_capped",
                 side_effect=subprocess.TimeoutExpired(cmd=["reaterm"], timeout=1),
             ):
                 with self.assertRaisesRegex(ReaTermError, "execution failed"):
@@ -76,7 +74,7 @@ class SecurityAdapterTests(unittest.TestCase):
             {"REATERM_DECISION_MODEL": "test-model", "REATERM_OPENAI_API_KEY": "test-key"},
             clear=True,
         ), patch.dict(sys.modules, {"openai": fake}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             with self.assertRaisesRegex(ReaTermError, "denied by optional"):
                 ReaTerm(binary="reaterm").run("ls")
@@ -90,7 +88,7 @@ class SecurityAdapterTests(unittest.TestCase):
             {"REATERM_DECISION_MODEL": "test-model", "REATERM_OPENAI_API_KEY": "test-key"},
             clear=True,
         ), patch.dict(sys.modules, {"openai": fake}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             execute.return_value.returncode = 2
             execute.return_value.stderr = "reaterm: denied: chmod"
@@ -106,7 +104,7 @@ class SecurityAdapterTests(unittest.TestCase):
                 {"REATERM_DECISION_MODEL": "test-model", "REATERM_OPENAI_API_KEY": "test-key"},
                 clear=True,
             ), patch.dict(sys.modules, {"openai": fake}), patch(
-                "reaterm.client.subprocess.run"
+                "reaterm.client._capture_capped"
             ) as execute:
                 with self.assertRaises(ReaTermError):
                     ReaTerm(binary="reaterm").run("ls")
@@ -119,7 +117,7 @@ class SecurityAdapterTests(unittest.TestCase):
             {"REATERM_DECISION_MODEL": "test-model", "REATERM_OPENAI_API_KEY": "test-key"},
             clear=True,
         ), patch.dict(sys.modules, {"openai": fake}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             with self.assertRaisesRegex(ReaTermError, "model veto unavailable"):
                 ReaTerm(binary="reaterm").run("ls")
@@ -138,13 +136,14 @@ class SecurityAdapterTests(unittest.TestCase):
             },
             clear=True,
         ), patch.dict(sys.modules, {"openai": fake}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             execute.return_value.returncode = 0
             execute.return_value.stdout = "ok"
             self.assertEqual(ReaTerm(binary="reaterm").run("ls"), "ok")
             fake.OpenAI.assert_called_once_with(
-                api_key="custom-key", base_url="http://127.0.0.1:9999/v1"
+                api_key="custom-key", base_url="http://127.0.0.1:9999/v1",
+                timeout=15, max_retries=0,
             )
 
     def test_missing_model_credentials_fail_before_launch(self):
@@ -152,7 +151,7 @@ class SecurityAdapterTests(unittest.TestCase):
         with patch.dict(
             os.environ, {"REATERM_DECISION_MODEL": "model"}, clear=True
         ), patch.dict(sys.modules, {"openai": fake}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             with self.assertRaisesRegex(ReaTermError, "API_KEY"):
                 ReaTerm(binary="reaterm").run("ls")

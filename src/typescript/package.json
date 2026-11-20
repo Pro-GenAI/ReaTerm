@@ -18,17 +18,28 @@
     "node": ">=20"
   },
   "peerDependencies": {
-    "openai": ">=4 <8"
+    "openai": ">=4 <8",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "openai": {
+      "optional": true
+    },
+    "@modelcontextprotocol/server": {
+      "optional": true
+    },
+    "zod": {
       "optional": true
     }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "openai": "^6.0.0",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/client": "^2.0.0"
   },
   "license": "MIT",
   "homepage": "https://reaterm.pro-genai.com/",
@@ -51,5 +62,8 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "bin": {
+    "reaterm-mcp": "./dist/src/mcp-server.js"
   }
 }

@@ -70,6 +70,8 @@ export class ReaTerm {
     try {
       const client = new OpenAI({
         apiKey: this.apiKey,
+        timeout: this.timeoutMs,
+        maxRetries: 0,
         ...(this.baseURL ? { baseURL: this.baseURL } : {}),
       });
       const completion = await client.chat.completions.create({
@@ -154,7 +156,7 @@ export class ReaTerm {
  * Shell operators/substitutions are deliberately not accepted here; use the
  * ReaTerm class API for exact literal arguments, including unusual filenames.
  */
-function parseCommandLine(commandLine: string): string[] {
+export function parseCommandLine(commandLine: string): string[] {
   if (typeof commandLine !== "string" || !commandLine.trim()) {
     throw new ReaTermError("commandLine must be a nonempty string");
   }
@@ -210,3 +212,10 @@ export async function run(commandLine: string, options: ReaTermOptions = {}): Pr
   const [command, ...args] = parseCommandLine(commandLine);
   return new ReaTerm(options).run(command, ...args);
 }
+
+// Importing this module does not instantiate a server or contact a provider.
+export {
+  READ_COMMANDS, TOOL_DESCRIPTION, inputSchema,
+  reatermToolOpenAI, reatermToolOpenAIResponses, reatermToolAnthropic,
+  executeReatermTool,
+} from "./tools.js";

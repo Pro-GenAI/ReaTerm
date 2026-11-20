@@ -32,8 +32,10 @@ Every modification must preserve:
    command if combined with any other argument. Validate the ENTIRE argv
    before root resolution, filesystem access or command dispatch; reject
    conflicts on stderr with a nonzero exit status, no stdout.
-3. **Kernel enforcement:** Linux x86-64 and ARM64 require Landlock ABI v3+
-   AND seccomp denial of metadata mutations (chmod/chown/xattr/timestamps).
+3. **Kernel enforcement:** Linux x86-64 and ARM64 require root-scoped Landlock ABI v3+
+   AND seccomp denial of metadata mutations (chmod/chown/xattr/timestamps),
+   process creation (exec/fork/clone), socket/connect, io_uring setup and
+   ftruncate.
    macOS Intel and Apple Silicon require a Seatbelt profile denying
    file-write*, file-link, process-exec/fork and network operations.
    Apple's sandbox_init API is deprecated; fail closed if unavailable.
@@ -46,8 +48,18 @@ Every modification must preserve:
    Reject absolute and parent-traversal paths. Do not replace capability
    resolution with canonicalization+prefix checks vulnerable to races.
 5. **Special files:** deny reading devices, FIFOs, sockets and final symlinks
-   through content-reading commands.
+   through content-reading commands. Reject intermediate symlink components
+   for file and metadata/listing operations, without claiming those checks
+   eliminate races in a concurrently modified filesystem. Deny common secret
+   names and directories in native Rust operand/root validation and hide
+   them from listings, including `ls -a`. This is filename-based,
+   not content scanning/redaction/DLP, and can have false positives.
 6. **Resource bounds:** enforce file size, output, line count and listing caps.
+   Count every directory entry scanned, including filtered names. On Linux
+   and macOS install the mandatory native 10/11-second soft/hard RLIMIT_CPU;
+   wrappers default to 15-second subprocess timeouts. Unix CPU limits do
+   not prevent blocking filesystem I/O; no native Windows deadline exists.
+   The trusted host must supply additional wall-clock, memory and I/O limits.
 7. **Model veto only:** optional OpenAI-compatible checks in the language
    wrappers can reject requests but never override Rust denial. Model errors
    fail closed. Model-facing tools can propose only native read-only commands;
@@ -101,6 +113,20 @@ Every modification must preserve:
 - src/typescript/: Node.js ESM/TypeScript interface; optional official openai.
   Exported `run("ls -al", options?)` uses quote/whitespace argv parsing;
   class `ReaTerm.run("ls", "-al")` keeps literal-argv behavior.
+  `src/tools.ts` exports OpenAI Chat/Responses and Anthropic strict tool
+  schemas plus a validating executor; `src/mcp-server.ts` exposes one
+  stdio MCP `run_command` via optional official v2 SDK and Zod v4.
+  The MCP handler MUST inherit the operator's REATERM_DECISION_MODEL;
+  never force decisionModel to empty or bypass model veto.
+  MCP protocol tests MUST drive real SDK clients through real transports:
+  Python `pytest-mcptest==0.1.1` stdio fixtures, TypeScript
+  `@modelcontextprotocol/client` in-memory and stdio. Keep separate lightweight
+  handler mocks if useful, but do not substitute them for protocol testing.
+  `make verify` and Windows verification run both Python unittest and
+  pytest MCP suites; TS `npm run check` exercises the official MCP client.
+  The host selects --root/--binary, never model input. The TS package
+  publishes the optional `reaterm-mcp` bin and still requires the separate
+  native executable.
 - src/python/tests/test_security_matrix.py and
   src/typescript/test/security-matrix.test.ts: cross-language regression
   matrices for trusted-root confinement, command allowlists, literal argv,
@@ -112,13 +138,11 @@ Every modification must preserve:
   developer setup, test commands, release or deployment instructions.
   Keep short examples truthful, mention the separate native executable,
   and avoid unverified claims of package registry availability.
-  All four READMEs display live PyPI/npm version badges, a GitHub-backed
-  MIT license badge, and four static tested-platform badges (Linux x86-64/
-  ARM64, Windows x86-64, macOS Intel, macOS Apple Silicon M-series).
-  Keep badges linked to official registries and relative LICENSE/TESTING.md
-  paths. Platform badges describe documented coverage, not currently
-  enabled cross-platform CI; never substitute the source package version
-  for an unverified published registry release.
+  Keep the GitHub-backed MIT license badge. Do not display live PyPI/npm
+  version badges before registry publication is verified. Avoid static
+  platform-tested badges until their claims can be verified with current
+  evidence. Explicitly distinguish source examples from published package
+  availability. Link to docs/DEVELOPMENT.md for installation and testing.
 - docs/DEVELOPMENT.md: setup, build, test and troubleshooting.
 - docs/TOOL_INTEGRATIONS.md: provider schemas, tool-call/result cycles, and confidentiality risks.
 - docs/website/: self-contained, deployable static website (index.html,
@@ -136,10 +160,23 @@ Every modification must preserve:
 - .env.example: safe, up-to-date template for optional decision-model settings;
   never place real API keys in this file.
 - docs/THREAT_MODEL.md: security boundaries and non-goals.
+- docs/SECURITY_HARDENING.md: comparison with containers, bubblewrap and
+  framework-native file tools, plus remaining confidentiality/CPU risks.
+- src/rust/tests/secret_paths.rs: native secret-path deny regressions on
+  supported platforms; tests/paths_and_policy.rs also covers FIFO failures.
+- src/rust/src/lib.rs: native path validation, best-effort secret-name
+  filter (including credentials, kubeconfig and keystore extensions),
+  symlink-component rejection, `--` separators, bounded streaming
+  head/tail/grep (up to 128 grep files), read/listing and Unix CPU cap.
+  Linux Landlock must grant read access ONLY inside root_path, not `/`.
+  Windows cap-std lacks a public Windows nofollow open flag; preserve
+  capability-relative opens and document the remaining reparse race risk.
+- src/rust/Cargo.toml: require patched cap-std 3.4.6+ on the 3.x line;
+  retain the Cargo.lock pin because of RUSTSEC-2026-0482.
 - .circleci/config.yml: native CircleCI regression pipelines, based on the
   Agent-RT configuration pattern. Linux x86-64 runs by default; native Linux
   ARM64 and macOS Apple Silicon (M4 Pro) are default-on parameterized
-  workflows. Windows Server 2022 x86-64 is opt-in with run_windows_ci=true;
+  workflows. Windows Server 2022 x86-64 defaults on with run_windows_ci=true;
   slow resource stress is opt-in with run_stress=true. Every enabled job
   runs the actual Rust CLI sandbox and full language/website regression
   suite; the Unix jobs use sequential make verify and cache registry data.
@@ -158,7 +195,19 @@ Every modification must preserve:
   use `--dry-run` for validation without uploading. Validate built JS/types,
   native Rust integration, package contents and auth file cleanup.
 - scripts/test_publish_workflows.py: offline fake-npm release-safety tests.
-- temp/update-versions.sh: update the shared Python, Rust and npm release version and lockfiles without publishing.
+- scripts/update-versions.sh: update shared Python, Rust and npm release versions without publishing. The npm package-lock.json is optional; never
+  assume it exists or require npm ci when absent.
+- src/shared/tokenizer-fixtures.json: shared Python `shlex` and TypeScript
+  tokenizer regression corpus for valid quote/escape parsing and denied
+  metacharacters; standard language suites must exercise it.
+- src/typescript/test/mcp-stdio.test.ts: actual MCP JSON-RPC stdio
+  regression; a configured veto without model credentials MUST reject
+  before any native command is launched.
+- src/python/reaterm/client.py: guard shallow install ancestors, limit
+  combined stdout/stderr capture to 2 MiB with replacement UTF-8 decoding,
+  preserve argv-only process launch and trusted binary selection.
+  Higher-level offline Python tool/MCP tests mock _capture_capped, not
+  subprocess.run; inspect shell=False at the subprocess.Popen boundary.
 
 ## Contributor workflow
 
@@ -210,7 +259,8 @@ Every modification must preserve:
     versions, never publish during tests, use PyPI OIDC trusted publisher
     and scope `pypi` environment, and keep npm auth outside the
     source tree. The Python package does not provide the Rust binary,
-    nor does the npm package. Run
+    nor does the npm package. Native prebuilt wheels/npm platform packages
+    require a separately reviewed build matrix and explicit release. Run
     `python3 -m unittest discover -s scripts -p 'test_publish*.py' -v`
     for every release-tool change. Existing test CI workflows are
     intentionally disabled; do not reactivate them.

@@ -82,14 +82,13 @@ class MCPServerTests(unittest.TestCase):
     def test_tool_denials_propagate_and_never_invoke_shell(self):
         with tempfile.TemporaryDirectory() as directory, fake_mcp_sdk(), patch.dict(
             os.environ, {"REATERM_DECISION_MODEL": ""}
-        ), patch("reaterm.client.subprocess.run") as execute:
+        ), patch("reaterm.client._capture_capped") as execute:
             server = create_server(root=directory, binary="/trusted/reaterm")
             tool = server.handlers["run_command"]
             execute.return_value.returncode = 0
             execute.return_value.stdout = "read\n"
             self.assertEqual(tool("cat", ["file;$(touch PWNED)"]), "read\n")
             self.assertEqual(execute.call_args.args[0][-2:], ["cat", "file;$(touch PWNED)"])
-            self.assertFalse(execute.call_args.kwargs["shell"])
             with self.assertRaises(ValueError):
                 tool("sh", [])
             with self.assertRaises(ValueError):

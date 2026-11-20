@@ -1,13 +1,6 @@
 # reaterm — Read-only terminal access for Node.js
 
-[![PyPI version](https://img.shields.io/pypi/v/reaterm?label=PyPI)](https://pypi.org/project/reaterm/)
-[![npm version](https://img.shields.io/npm/v/reaterm?label=npm)](https://www.npmjs.com/package/reaterm)
 [![MIT license](https://img.shields.io/github/license/Pro-GenAI/ReaTerm?label=license)](../../LICENSE)
-
-[![Tested Linux x86-64 and ARM64](https://img.shields.io/badge/tested-Linux%20x86--64%20%26%20ARM64-2ea44f)](../../docs/TESTING.md)
-[![Tested Windows x86-64](https://img.shields.io/badge/tested-Windows%20x86--64-2ea44f)](../../docs/TESTING.md)
-[![Tested macOS Intel](https://img.shields.io/badge/tested-macOS%20Intel-2ea44f)](../../docs/TESTING.md)
-[![Tested macOS Apple Silicon M-series](https://img.shields.io/badge/tested-macOS%20Apple%20Silicon%20(M--series)-2ea44f)](../../docs/TESTING.md)
 
 **Explore files from JavaScript without offering an arbitrary shell.**
 
@@ -54,8 +47,29 @@ Supported: Linux x86-64/ARM64, macOS Intel/Apple Silicon, and Windows
 x86-64. Published npm availability has not been verified. The protection
 applies to the ReaTerm process, not the caller's shell.
 
-Looking for OpenAI or Anthropic function-tool schemas?
-Those are currently offered by the [Python integration](../python/README.md).
+**AI-agent integration:** the TypeScript package also exports strict
+OpenAI Chat Completions/Responses and Anthropic tool schemas:
+`reatermToolOpenAI`, `reatermToolOpenAIResponses`,
+`reatermToolAnthropic`, and `executeReatermTool`. The optional
+`reaterm-mcp` stdio server offers one read-only inspection tool, with the
+root set by the MCP host instead of the model. The native CLI is still
+required. See the [integration examples](../../docs/TOOL_INTEGRATIONS.md).
 
 [Website](https://reaterm.pro-genai.com/) ·
 [See the security model](../../docs/THREAT_MODEL.md)
+
+
+## Security and installation notes
+
+This is an **unaudited prototype**, not a production data-loss-prevention
+boundary. The native executable is installed separately from the Node
+adapter and must be discoverable on `PATH` or via `REATERM_BIN`.
+See [source installation](../../docs/DEVELOPMENT.md).
+
+ReaTerm denies common secret filenames by default, but does not scan file
+contents or redact arbitrary credentials. Output remains untrusted model input;
+it may contain prompt injection. The wrapper defaults to a 15-second native
+subprocess wall timeout, whereas Unix native execution has a 10-second CPU
+budget; standalone native I/O can still block. Linux requires Landlock ABI v3
+(approximately kernel 6.2+). See the
+[threat model](../../docs/THREAT_MODEL.md) before exposing a directory to an agent.

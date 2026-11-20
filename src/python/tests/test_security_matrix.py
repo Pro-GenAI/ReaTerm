@@ -29,7 +29,7 @@ class OfflineCommandSecurity(unittest.TestCase):
     def test_every_allowed_tool_command_preserves_argv_and_trusted_root(self):
         with tempfile.TemporaryDirectory() as root, patch.dict(
             os.environ, {"REATERM_DECISION_MODEL": ""}
-        ), patch("reaterm.client.subprocess.run") as execute:
+        ), patch("reaterm.client._capture_capped") as execute:
             execute.return_value.returncode = 0
             execute.return_value.stdout = "safe\n"
             for command, args in OPERATIONS:
@@ -47,7 +47,6 @@ class OfflineCommandSecurity(unittest.TestCase):
                         execute.call_args.args[0],
                         ["/trusted/reaterm", "--root", str(Path(root).resolve()), command, *args],
                     )
-                    self.assertFalse(execute.call_args.kwargs["shell"])
                     self.assertEqual(execute.call_args.kwargs["timeout"], 2)
             self.assertFalse((Path(root) / "PWNED").exists())
 
@@ -71,7 +70,7 @@ class OfflineCommandSecurity(unittest.TestCase):
 
     def test_native_failure_never_returns_partial_stdout(self):
         with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}), patch(
-            "reaterm.client.subprocess.run"
+            "reaterm.client._capture_capped"
         ) as execute:
             execute.return_value.returncode = 2
             execute.return_value.stdout = "SENSITIVE_CONTENT\n"

@@ -22,7 +22,7 @@ pub(crate) enum Request {
 
 const COMMANDS: &str = "pwd\nls\ncat\nhead\ntail\nwc\ngrep\nstat\n";
 const LIMITS: &str =
-    "Maximum file size: 10 MiB\nMaximum stdout: 1 MiB\nMaximum ls entries: 10000\nMaximum requested head/tail lines: 100000\n";
+    "Maximum file size: 10 MiB\nMaximum stdout: 1 MiB\nMaximum ls entries: 10000\nMaximum requested head/tail lines: 100000\nMaximum explicit grep files: 128\nUnix native CPU budget: 10 seconds (no native wall-clock limit)\nPython/Node default subprocess wall timeout: 15 seconds\n";
 const HELP: &str = "\
 ReaTerm - native read-only terminal for Linux, macOS, and Windows\n\
 \n\
@@ -46,18 +46,19 @@ Execution options (must precede COMMAND):\n\
 \n\
 Read-only commands:\n\
   pwd                       Print configured root\n\
-  ls [-a] [-l] [PATH]       List directory contents\n\
-  cat FILE [FILE...]        Print regular files\n\
-  head [-n N] FILE          Print first N lines\n\
-  tail [-n N] FILE          Print last N lines\n\
-  wc [-l] FILE              Count lines, words and bytes\n\
-  grep [-n] [-i] TEXT FILE  Search for a literal string\n\
-  stat PATH                 Show path type and size\n\
+  ls [-a] [-l] [--] [PATH]  List directory contents\n\
+  cat [--] FILE [FILE...]   Print regular files\n\
+  head [-n N] [--] FILE     Print first N lines\n\
+  tail [-n N] [--] FILE     Print last N lines\n\
+  wc [-l] [--] FILE         Count lines, words and bytes\n\
+  grep [-n] [-i] [--] TEXT FILE [FILE...]  Literal text (max 128 files)\n\
+  stat [--] PATH            Show path type and size\n\
 \n\
 Examples:\n\
   reaterm ls -la\n\
   reaterm cat README.md\n\
   reaterm --root ./project grep -n TODO README.md\n\
+  reaterm cat -- -leading-filename\n\
   reaterm --help\n\
 \n\
 Info flags cannot be combined with other flags, arguments, or commands.\n\

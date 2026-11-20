@@ -52,13 +52,14 @@ function Test-Rust {
 
 function Setup-Python {
     Run-Checked "python" @("-m", "venv", ".venv") $python
-    Run-Checked $pythonVenv @("-m", "pip", "install", "--disable-pip-version-check", "-e", ".") $python
+    Run-Checked $pythonVenv @("-m", "pip", "install", "--disable-pip-version-check", "-e", ".[mcp-test]") $python
 }
 
 function Test-Python {
     Assert-Binary
     $env:REATERM_BIN = $binary
     Run-Checked $pythonVenv @("-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v") $python
+    Run-Checked $pythonVenv @("-m", "pytest", "-q", "mcp_tests") $python
 }
 
 function Setup-TypeScript {

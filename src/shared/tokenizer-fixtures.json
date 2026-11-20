@@ -1,0 +1,122 @@
+[
+  {
+    "input": "ls -al",
+    "argv": [
+      "ls",
+      "-al"
+    ]
+  },
+  {
+    "input": "cat \"file name.txt\"",
+    "argv": [
+      "cat",
+      "file name.txt"
+    ]
+  },
+  {
+    "input": "cat 'literal\\path'",
+    "argv": [
+      "cat",
+      "literal\\path"
+    ]
+  },
+  {
+    "input": "cat file\\ name.txt",
+    "argv": [
+      "cat",
+      "file name.txt"
+    ]
+  },
+  {
+    "input": "cat \"escaped \\\"quote\\\".txt\"",
+    "argv": [
+      "cat",
+      "escaped \"quote\".txt"
+    ]
+  },
+  {
+    "input": "cat \"a\\\\b\"",
+    "argv": [
+      "cat",
+      "a\\b"
+    ]
+  },
+  {
+    "input": "cat ''",
+    "argv": [
+      "cat",
+      ""
+    ]
+  },
+  {
+    "input": "grep -- -i data.txt",
+    "argv": [
+      "grep",
+      "--",
+      "-i",
+      "data.txt"
+    ]
+  },
+  {
+    "input": "cat \\\"",
+    "argv": [
+      "cat",
+      "\""
+    ]
+  },
+  {
+    "input": "cat \"a\\zb\"",
+    "argv": [
+      "cat",
+      "a\\zb"
+    ]
+  },
+  {
+    "input": "",
+    "error": true
+  },
+  {
+    "input": "cat \"unterminated",
+    "error": true
+  },
+  {
+    "input": "cat 'unterminated",
+    "error": true
+  },
+  {
+    "input": "cat \\",
+    "error": true
+  },
+  {
+    "input": "ls && cat other",
+    "error": true
+  },
+  {
+    "input": "ls | grep foo",
+    "error": true
+  },
+  {
+    "input": "cat $(touch PWNED)",
+    "error": true
+  },
+  {
+    "input": "ls > result",
+    "error": true
+  },
+  {
+    "input": "ls\ncat file",
+    "error": true
+  },
+  {
+    "input": "ls; touch x",
+    "error": true
+  },
+  {
+    "input": "ls `date`",
+    "error": true
+  },
+  {
+    "input": "\"\" ls",
+    "error": true
+  }
+]

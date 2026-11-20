@@ -1,15 +1,21 @@
-# ReaTerm v0.1 threat model
+# ReaTerm threat model (unaudited prototype)
 
 ## Intended security property
 
 The ReaTerm process implements a fixed subset of native file-inspection
 operations and cannot intentionally mutate files or execute other programs.
 On Linux x86-64 and ARM64, mandatory Landlock ABI v3+ and seccomp
-restrictions protect files from writes and metadata mutation. On macOS
+restrictions protect files from writes, metadata mutation, process creation
+and network socket syscalls. Landlock's read permission is scoped to the
+selected root rather than the entire filesystem. On macOS
 Intel and Apple Silicon, a mandatory Seatbelt sandbox denies filesystem
 writes and process/network operations. On Windows x86-64, the native
-command thread uses a low-integrity write-restricted access token. cap-std constrains native file
-paths to a caller-selected root on both systems.
+command thread uses a low-integrity write-restricted access token.
+cap-std constrains native paths to a caller-selected root on all supported
+platforms. A heuristic sensitive-path deny policy reduces accidental secret
+access but is not a confidentiality guarantee. The pinned lockfile uses patched
+cap-std/cap-primitives 3.4.6; the Cargo manifest rejects earlier 3.x
+cap-std versions (see [RUSTSEC-2026-0482](https://rustsec.org/advisories/RUSTSEC-2026-0482.html)).
 
 ## Attacker-controlled input
 
@@ -42,6 +48,24 @@ paths to a caller-selected root on both systems.
   absolute paths are forbidden.
 - Content commands reject symlink operands and special files.
 - File reads, output length and directory listing counts are bounded.
+  `head`, `tail` and `grep` stream file contents and `grep` supports up to
+  128 explicit files; recursive search is not implemented.
+- Common sensitive file and directory names are blocked in path operands,
+  direct root selection and directory listings, even with `ls -a`:
+  `.env` (except obvious samples), `.ssh`, `.aws`, `.gnupg`,
+  `.kube`, `.git`, common credential files, private keys and Terraform
+  state/variable files, `.git-credentials`, `.pgpass`, `.my.cnf`,
+  `kubeconfig` and Java/key-vault/PPK keystore extensions. Both case
+  variants and nested path components are
+  checked. Symlink components are rejected for file reads and intermediate
+  metadata/listing paths. Unix file content opens additionally set
+  `O_NOFOLLOW | O_NONBLOCK` to reject raced-in final symlinks and avoid
+  stalling on raced-in FIFOs; intermediate component checks are not atomic.
+  This is best-effort and may reject safe files.
+- On Linux/macOS, `RLIMIT_CPU` is installed before the sandbox: 10 seconds
+  of CPU time (11-second hard ceiling). Python and Node clients already use
+  subprocess wall-clock timeouts defaulting to 15 seconds. The native
+  Windows CLI currently has no independent CPU/wall-clock limit.
 - Linux Landlock + seccomp, macOS Seatbelt, or Windows write-restricted
   thread impersonation is installed before dispatch. The Windows token
   is installed before opening any capability root directory handle.
@@ -52,22 +76,51 @@ paths to a caller-selected root on both systems.
 - **Parent-shell operations:** the host shell processes >, >>, pipes and
   substitutions outside ReaTerm. Its redirection can truncate a file even
   when ReaTerm itself performs no filesystem write.
-- **Confidentiality:** callers choose --root and may read secrets within it.
-  The tool is not an authentication or data-loss-prevention system. Returning
-  file contents or stdout to an external model provider may disclose sensitive
-  information inside the caller-selected root; limit roots accordingly.
+- **Confidentiality:** the default path deny policy is based on names, not
+  content. Secrets under unconventional names (for example, a token embedded
+  in `notes.txt`) are readable. A malicious or concurrently modified tree can
+  exploit check/open races; symlink checks are not an atomic confinement
+  guarantee. This tool is not authentication, DLP or output redaction. A
+  trusted launcher must choose a small root, and an application must review
+  content before handing it to external model providers.
 - **Already-open descriptors:** Landlock does not revoke rights on open fds.
   Do not launch from an untrusted process with writable inherited fds.
 - **Networking/IPC:** no network/IPC interface is exposed in the native
-  command set. The Python MCP adapter uses local stdio IPC with its host,
+  command set; Linux seccomp additionally blocks socket/connect syscalls.
+  Python and TypeScript MCP adapters use local stdio IPC with their host,
   not a network listener, and does not authenticate that host. This is
   not an arbitrary-code execution sandbox.
+- **Prompt injection / agent composition:** read-only does not neutralize
+  instructions embedded in README files, logs or other untrusted tool output.
+  A model with browsing, email, shell, HTTP or other action tools may follow
+  hostile file content and disclose data or trigger actions. Tool outputs must
+  remain lower-trust data; authorization and outbound access belong to the
+  trusted host, not the model or an optional ALLOW/DENY model.
+- **CPU, latency and blocking I/O:** the native 10-second Unix CPU limit
+  reduces CPU exhaustion, but is not a wall-clock deadline. The Python and
+  Node wrappers time out the native child by default after 15 seconds.
+  A standalone native CLI or MCP host on Windows, or an unusual filesystem
+  operation that blocks without consuming CPU, still needs host-side process
+  supervision and filesystem controls. No memory/cgroup/Job Object quota is
+  currently provided.
 - **Other processes:** restrictions do not apply to siblings or parent shell.
 - **Platforms:** Linux x86-64/ARM64, macOS Intel/Apple Silicon and
-  Windows x86-64. Windows ARM64 and 32-bit ARM are not verified. Apple's sandbox_init API is
-  deprecated and could stop working; this must fail closed.
+  Windows x86-64. Landlock ABI v3 requires roughly Linux 6.2+, and kernels
+  or containers without the needed interfaces fail closed. Windows ARM64
+  and 32-bit ARM are not verified. Apple's `sandbox_init` API is deprecated
+  and could stop working; this must fail closed.
 - **Kernel vulnerabilities:** no OS sandbox can rule out kernel bugs or
   unusual side effects of hostile filesystems.
+
+## Security verification status
+
+This prototype has automated adversarial tests for common denied commands,
+path traversal, static symlink aliases, sensitive-path policy and resource
+caps. These are not a substitute for independent audit, fuzzing, race testing,
+hostile/malformed filesystem testing or validation of operating-system
+policy internals. In particular, the native Windows token is thread-local
+and the name filter is not a security boundary. Run the current test suite
+on each target platform before shipping.
 
 ## Review checklist
 
@@ -81,12 +134,15 @@ implementations. Add adversarial tests before relaxing any restriction.
 The Linux Landlock filesystem access-rights API (including ABI v3) does
 not cover chmod, chown, file extended-attribute modifications or timestamp
 mutations. ReaTerm therefore requires a second filter: a Linux seccomp-BPF
-syscall policy that returns EPERM for known metadata mutation syscalls and
-mount-related operations. This is enforced after Landlock and before
+syscall policy that returns EPERM for known metadata mutation syscalls,
+mount-related operations, execve/execveat, fork/clone variants, socket/connect,
+io_uring_setup and ftruncate. Landlock itself only grants read permissions
+under the selected root. This is enforced after Landlock and before
 command dispatch; any installation failure aborts. The current seccomp
 policy supports only native Linux x86-64 and ARM64 syscalls; other
 architectures fail closed. The command dispatcher itself never exposes
-chmod/chown or arbitrary external executables.
+chmod/chown or arbitrary external executables. These syscall denials are a
+blacklist defense-in-depth filter, not a complete seccomp syscall allowlist.
 
 This defense does not provide authorization over the parent shell, siblings,
 or previously opened descriptors. ReaTerm cannot prevent a caller from
@@ -136,3 +192,17 @@ The parent PowerShell/cmd shell may write redirected output independently.
 Tests on Windows attempt direct file writes, creation, rename, deletion,
 and file-attribute changes on disposable fixtures. They do not constitute
 a general sandbox or malware-containment guarantee.
+
+## Windows reparse-point caveat
+
+The Windows capability-based path resolver confines native paths and the
+file-reader checks for symlink components before opening. Windows cap-std
+`OpenOptions` does not currently expose the Unix `O_NOFOLLOW` equivalent
+`FILE_FLAG_OPEN_REPARSE_POINT` through `Dir::open_with`. There remains
+a race risk if a trusted-root tree is concurrently modified, so do not
+claim a fully atomic Windows anti-reparse guarantee. Do not replace a
+capability-relative open with ambient filesystem access to add that flag.
+The Windows integrity-label call now supplies a properly aligned contiguous
+buffer containing the header and the low-integrity SID bytes, matching its
+advertised length. Native Windows CI is configured by default, but this
+change requires validation on a native Windows runner.

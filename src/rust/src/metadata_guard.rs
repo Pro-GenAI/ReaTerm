@@ -1,7 +1,8 @@
 //! Minimal Linux seccomp complement to Landlock.
 //!
 //! Landlock ABI v3 controls file writes, creation, removal, and truncation,
-//! but not chmod/chown/xattr/timestamp operations. Deny these syscalls too.
+//! but not chmod/chown/xattr/timestamp operations. Also deny exec, clone,
+//! socket, io_uring setup, and direct truncation syscalls.
 //! This is defense in depth: ReaTerm still only dispatches native read commands.
 //!
 //! The policy is deliberately fail-closed on unsupported architectures.
@@ -58,6 +59,18 @@ pub(crate) fn enforce_metadata_read_only() -> Result<(), String> {
         libc::SYS_fsconfig,
         libc::SYS_fsmount,
         libc::SYS_mount_setattr,
+        // Process execution, new threads/processes, outbound networking,
+        // async I/O rings and descriptor-based truncation are prohibited.
+        libc::SYS_execve,
+        libc::SYS_execveat,
+        libc::SYS_fork,
+        libc::SYS_vfork,
+        libc::SYS_clone,
+        435, // clone3 on both x86_64 and arm64
+        libc::SYS_socket,
+        libc::SYS_connect,
+        425, // io_uring_setup
+        libc::SYS_ftruncate,
     ];
     #[cfg(target_arch = "aarch64")]
     let denied: &[libc::c_long] = &[
@@ -83,6 +96,14 @@ pub(crate) fn enforce_metadata_read_only() -> Result<(), String> {
         libc::SYS_fsconfig,
         libc::SYS_fsmount,
         libc::SYS_mount_setattr,
+        libc::SYS_execve,
+        libc::SYS_execveat,
+        libc::SYS_clone,
+        435, // clone3 on both x86_64 and arm64
+        libc::SYS_socket,
+        libc::SYS_connect,
+        425, // io_uring_setup
+        libc::SYS_ftruncate,
     ];
     let ins = |code: u16, jt: u8, jf: u8, k: u32| libc::sock_filter { code, jt, jf, k };
     let mut filter = Vec::with_capacity(7 + 2 * denied.len());
@@ -158,6 +179,48 @@ mod tests {
         })
         .join()
         .expect("seccomp test thread");
+    }
+
+    #[test]
+    fn seccomp_denies_process_network_and_truncation_syscalls() {
+        use std::os::fd::AsRawFd;
+
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("readable");
+        std::fs::write(&path, b"unchanged").unwrap();
+        let file = std::fs::File::open(&path).unwrap();
+        std::thread::spawn(move || {
+            enforce_metadata_read_only().expect("seccomp policy required");
+            let denied = |name: &str, result: libc::c_long| {
+                assert_eq!(result, -1, "{name} unexpectedly succeeded");
+                assert_eq!(
+                    std::io::Error::last_os_error().raw_os_error(),
+                    Some(libc::EPERM),
+                    "{name} must be blocked before kernel dispatch"
+                );
+            };
+            // SAFETY: syscall arguments are inert and the seccomp filter
+            // refuses them before dispatch. Do not execute a child process.
+            unsafe {
+                denied("fork", libc::syscall(libc::SYS_fork));
+                denied("clone3", libc::syscall(435, std::ptr::null::<u8>(), 0));
+                denied(
+                    "socket",
+                    libc::syscall(libc::SYS_socket, libc::AF_INET, libc::SOCK_STREAM, 0),
+                );
+                denied(
+                    "io_uring_setup",
+                    libc::syscall(425, 1, std::ptr::null_mut::<u8>()),
+                );
+                denied(
+                    "ftruncate",
+                    libc::syscall(libc::SYS_ftruncate, file.as_raw_fd(), 0),
+                );
+            }
+        })
+        .join()
+        .unwrap();
+        assert_eq!(std::fs::read(path).unwrap(), b"unchanged");
     }
 
     #[test]

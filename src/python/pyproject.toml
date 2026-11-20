@@ -21,6 +21,8 @@ Issues = "https://github.com/Pro-GenAI/ReaTerm/issues"
 [project.optional-dependencies]
 decision = ["openai>=1.0.0"]
 mcp = ["mcp>=2.0,<3"]
+# Test-only: an MCP v2 client harness, never a runtime dependency.
+mcp-test = ["mcp>=2.0,<3", "pytest>=8,<10", "pytest-mcptest==0.1.1"]
 
 [project.scripts]
 reaterm-mcp = "reaterm.mcp_server:main"

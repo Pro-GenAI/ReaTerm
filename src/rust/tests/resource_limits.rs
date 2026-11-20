@@ -87,3 +87,17 @@ fn listing_above_ten_thousand_entries_is_denied() {
     assert_eq!(result.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&result.stderr).contains("10000 entries"));
 }
+
+
+#[test]
+#[ignore = "stress: creates 10001 hidden files; run cargo test --test resource_limits -- --ignored"]
+fn hidden_entries_count_towards_the_directory_scan_limit() {
+    let root = tempfile::tempdir().unwrap();
+    for index in 0..10_001 {
+        fs::write(root.path().join(format!(".hidden_{index:05}")), b"").unwrap();
+    }
+    // Suppressing hidden names must not allow unbounded read_dir traversal.
+    let result = invoke(&root, &["ls"]);
+    assert_eq!(result.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&result.stderr).contains("10000 entries"));
+}

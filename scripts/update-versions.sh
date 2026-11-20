@@ -12,17 +12,30 @@ root = Path(sys.argv[1])
 if len(sys.argv) > 3:
     sys.exit("usage: update-versions.sh [new-version]")
 
-paths = [root / p for p in ("src/python/pyproject.toml", "src/rust/Cargo.toml", "src/rust/Cargo.lock", "src/typescript/package.json", "src/typescript/package-lock.json")]
-texts = [p.read_text(encoding="utf-8") for p in paths]
+paths = [root / p for p in (
+    "src/python/pyproject.toml",
+    "src/rust/Cargo.toml",
+    "src/rust/Cargo.lock",
+    "src/typescript/package.json",
+)]
 patterns = [
     r'(?m)^version = "([^"\n]+)"',
     r'(?m)^version = "([^"\n]+)"',
     r'(?m)(?<=\nname = "reaterm"\n)version = "([^"\n]+)"',
     r'(?m)^  "version": "([^"\n]+)"',
-    r'(?m)^  "version": "([^"\n]+)"',
-    r'(?m)(?<=\n    "": {\n      "name": "reaterm",\n)      "version": "([^"\n]+)"',
 ]
-indexes = [0, 1, 2, 3, 4, 4]
+indexes = [0, 1, 2, 3]
+# A lockfile is optional: npm install is used when one is not committed.
+# If a checkout has a lockfile, keep both of its root versions in sync.
+npm_lock = root / "src/typescript/package-lock.json"
+if npm_lock.is_file():
+    paths.append(npm_lock)
+    patterns.extend((
+        r'(?m)^  "version": "([^"\n]+)"',
+        r'(?m)(?<=\n    "": {\n      "name": "reaterm",\n)      "version": "([^"\n]+)"',
+    ))
+    indexes.extend((4, 4))
+texts = [p.read_text(encoding="utf-8") for p in paths]
 matches = []
 for index, pattern in zip(indexes, patterns):
     found = list(re.finditer(pattern, texts[index]))
@@ -33,7 +46,7 @@ for index, pattern in zip(indexes, patterns):
 semver = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z')
 if any(not semver.fullmatch(v) for v in matches):
     sys.exit("error: existing versions must use numeric major.minor.patch format")
-if json.loads(texts[3])["name"] != "reaterm" or json.loads(texts[4])["packages"][""]["name"] != "reaterm":
+if json.loads(texts[3])["name"] != "reaterm" or (npm_lock.is_file() and json.loads(texts[4])["packages"][""]["name"] != "reaterm"):
     sys.exit("error: unexpected npm package name")
 current = max(matches, key=lambda v: tuple(map(int, v.split('.'))))
 if len(set(matches)) != 1:

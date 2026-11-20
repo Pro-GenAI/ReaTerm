@@ -8,12 +8,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
-    "temp/update-versions.sh",
+    "scripts/update-versions.sh",
     "src/python/pyproject.toml",
     "src/rust/Cargo.toml",
     "src/rust/Cargo.lock",
     "src/typescript/package.json",
-    "src/typescript/package-lock.json",
 )
 
 
@@ -32,18 +31,38 @@ class VersionUpdateTests(unittest.TestCase):
                               text=True, capture_output=True)
 
     def test_updates_all_versions_and_preserves_dependencies(self):
-        before = json.loads((self.root / FILES[5]).read_text())
+        before = json.loads((self.root / FILES[4]).read_text())
+        self.assertFalse((self.root / "src/typescript/package-lock.json").exists())
         result = self.run_update("12.34.56")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('version = "12.34.56"', (self.root / FILES[1]).read_text())
         self.assertIn('version = "12.34.56"', (self.root / FILES[2]).read_text())
         self.assertIn('name = "reaterm"\nversion = "12.34.56"', (self.root / FILES[3]).read_text())
         self.assertEqual(json.loads((self.root / FILES[4]).read_text())["version"], "12.34.56")
-        after = json.loads((self.root / FILES[5]).read_text())
+        after = json.loads((self.root / FILES[4]).read_text())
         self.assertEqual(after["version"], "12.34.56")
-        self.assertEqual(after["packages"][""]["version"], "12.34.56")
-        self.assertEqual({k: v for k, v in before["packages"].items() if k},
-                         {k: v for k, v in after["packages"].items() if k})
+        self.assertEqual(before.get("dependencies"), after.get("dependencies"))
+        self.assertEqual(before.get("devDependencies"), after.get("devDependencies"))
+        self.assertFalse((self.root / "src/typescript/package-lock.json").exists())
+
+    def test_optional_lockfile_is_updated_when_present(self):
+        path = self.root / "src/typescript/package-lock.json"
+        lock = {
+            "name": "reaterm",
+            "version": "0.0.1",
+            "lockfileVersion": 3,
+            "packages": {
+                "": {"name": "reaterm", "version": "0.0.1"},
+                "node_modules/example": {"name": "example", "version": "4.5.6"},
+            },
+        }
+        path.write_text(json.dumps(lock, indent=2) + "\n", encoding="utf-8")
+        result = self.run_update("1.2.3")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        updated = json.loads(path.read_text())
+        self.assertEqual(updated["version"], "1.2.3")
+        self.assertEqual(updated["packages"][""]["version"], "1.2.3")
+        self.assertEqual(updated["packages"]["node_modules/example"], lock["packages"]["node_modules/example"])
 
     def test_rejection_does_not_change_files(self):
         before = [(self.root / p).read_bytes() for p in FILES[1:]]

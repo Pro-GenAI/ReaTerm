@@ -23,8 +23,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: src/typescript/package-lock.json
       - name: Runtime module size limit (800 lines)
         run: python scripts/check_module_size.py
       - name: Install Python dependencies
@@ -37,9 +35,9 @@ jobs:
           mypy src
           ruff check src tests scripts
           black --check src tests scripts
-      - name: Install locked TypeScript dependencies
+      - name: Install TypeScript dependencies
         working-directory: src/typescript
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: TypeScript quality gate (tsc, ESLint, Knip, Prettier)
         working-directory: src/typescript
         run: |
@@ -90,11 +88,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: src/typescript/package-lock.json
-      - name: Install locked dependencies
+      - name: Install TypeScript dependencies
         working-directory: src/typescript
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Test TypeScript runtime
         working-directory: src/typescript
         run: npm test

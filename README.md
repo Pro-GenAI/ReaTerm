@@ -4,16 +4,15 @@
 
 # ReaTerm
 
-[![PyPI version](https://img.shields.io/pypi/v/reaterm?label=PyPI)](https://pypi.org/project/reaterm/)
-[![npm version](https://img.shields.io/npm/v/reaterm?label=npm)](https://www.npmjs.com/package/reaterm)
 [![MIT license](https://img.shields.io/github/license/Pro-GenAI/ReaTerm?label=license)](LICENSE)
 
-[![Tested Linux x86-64 and ARM64](https://img.shields.io/badge/tested-Linux%20x86--64%20%26%20ARM64-2ea44f)](docs/TESTING.md)
-[![Tested Windows x86-64](https://img.shields.io/badge/tested-Windows%20x86--64-2ea44f)](docs/TESTING.md)
-[![Tested macOS Intel](https://img.shields.io/badge/tested-macOS%20Intel-2ea44f)](docs/TESTING.md)
-[![Tested macOS Apple Silicon M-series](https://img.shields.io/badge/tested-macOS%20Apple%20Silicon%20(M--series)-2ea44f)](docs/TESTING.md)
-
 **Inspect files. Not everything needs a writable shell.**
+
+> **Prototype / not independently audited.** ReaTerm is not a production
+> security boundary. The optional registry packages have not been verified;
+> use the source-checkout guide. Run only against a small, trusted root
+> that excludes sensitive material. See the
+> [threat model](docs/THREAT_MODEL.md) before exposing output to an agent.
 
 ReaTerm is a native, read-only terminal built in Rust. Instead of allowing
 arbitrary shell commands, it offers a deliberately small set of
@@ -29,8 +28,9 @@ information without handing them an unrestricted command runner.
 
 - **Read-only by design.** Eight built-in inspection commands, no arbitrary
   program execution, and unsupported operations denied by default.
-- **Defense in depth.** Capability-scoped paths, bounded output, and
-  OS-backed read-only enforcement on supported systems.
+- **Defense in depth.** Capability-scoped paths, a default deny policy for
+  common secrets, bounded output, and OS-backed read-only enforcement.
+  Neither a filename deny policy nor read-only execution is full DLP.
 - **One-line integration.** Use `reaterm.run("ls -al")` in Python or
   `await reaterm.run("ls -al")` in JavaScript.
 - **Made for AI agents.** Python function-tool definitions for OpenAI
@@ -61,9 +61,16 @@ console.log(await reaterm.run("ls -al"));
 
 </details>
 
-Both language adapters require the separately installed **ReaTerm native
-Rust executable**. Registry publication is not verified; the examples
-illustrate the APIs rather than claiming packages are available.
+Both language adapters require the **separately installed native Rust
+executable**. Registry publication is not verified; the examples describe
+the source-checkout APIs, not availability on PyPI/npm.
+
+## Get started
+
+The native Rust executable is installed separately from the Python and
+Node adapters; they do not bundle it. The recommended source-checkout
+setup, platform prerequisites and examples are in the
+[installation guide](docs/DEVELOPMENT.md).
 
 ## A bounded tool for AI workflows
 
@@ -74,10 +81,18 @@ from reaterm.tools.anthropic import reaterm_tool_anthropic
 # Pass the corresponding definition in your provider's tools list.
 ~~~
 
-The model requests an approved inspection operation; your application
-explicitly executes the request through ReaTerm and returns the result.
-There is no shell. Tool results shared with a provider may disclose
-readable files from your selected root.
+The model requests a structured `{"command":"cat","args":["README.md"]}`
+operation; your application explicitly executes it through ReaTerm and
+returns the result. The convenient `run("cat README.md")` API has a
+restricted quote parser, but **provider tools use separate argv tokens**;
+neither interface invokes a shell. Prefer `ReaTerm.run("cat", "README.md")`
+or structured provider arguments for exact filenames.
+
+Output is untrusted project data. Files can contain instructions designed to
+hijack the model, and an agent with *other* tools may transmit or act on that
+data. Never grant tool output higher instruction priority or chain it into
+network/action tools without independent authorization. The default
+sensitive-path policy is heuristic and cannot make an arbitrary root safe.
 
 **[See OpenAI, Anthropic & MCP examples](docs/TOOL_INTEGRATIONS.md)**
 
@@ -102,8 +117,20 @@ that directory when starting the server.
 
 ReaTerm supports Linux x86-64/ARM64, macOS Intel/Apple Silicon, and
 Windows x86-64 with platform-specific protections. It restricts **its
-own process**, not the parent shell or other programs. The selected
-directory is not a confidentiality barrier.
+own process**, not the parent shell or other programs.
+The selected directory is **not** a confidentiality barrier. Common
+secret paths (such as `.env.production`, `.ssh/`, `.aws/`, private-key
+extensions and cloud credential files) are denied by default and excluded
+from `ls` output; nonstandard secret names or sensitive content in ordinary
+files are not detected. The policy can also deny benign files.
+
+Linux requires a kernel implementing **Landlock ABI v3** (roughly Linux
+6.2+), plus working seccomp; older kernels fail closed. Unix native
+processes have a **10-second CPU budget**, while the Python and Node
+wrappers default to **15-second subprocess wall timeouts**. Neither
+eliminates blocking I/O risk for a standalone CLI on unusual filesystems.
+See [security limitations](docs/THREAT_MODEL.md) and
+[ReaTerm versus alternatives](docs/SECURITY_HARDENING.md).
 
 [How ReaTerm protects inspection](docs/THREAT_MODEL.md) ·
 [ReaTerm website](https://reaterm.pro-genai.com/)
