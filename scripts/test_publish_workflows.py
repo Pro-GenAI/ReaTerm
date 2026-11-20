@@ -20,6 +20,22 @@ PYPI_WORKFLOW = ROOT / ".github/workflows/publish-pypi.yml"
 
 
 class PyPIConfigurationTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("bash"), "bash required")
+    def test_isolated_wheel_test_layout_includes_tokenizer_corpus(self):
+        text = PYPI_WORKFLOW.read_text(encoding="utf-8")
+        start = text.index('          mkdir -p "$temp/python"')
+        end = text.index('          export REATERM_BIN=', start)
+        with tempfile.TemporaryDirectory() as temp:
+            subprocess.run(["bash", "-eu", "-c", text[start:end]], cwd=ROOT,
+                           env={**os.environ, "temp": temp}, check=True)
+            fixture = Path(temp) / "python/tests/test_tokenizer_parity.py"
+            result = subprocess.run(
+                [os.sys.executable, str(fixture)], cwd=temp,
+                env={**os.environ, "PYTHONPATH": str(ROOT / "src/python")},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_release_workflow_matches_real_package_and_requires_tests(self):
         text = PYPI_WORKFLOW.read_text(encoding="utf-8")
         for expected in (

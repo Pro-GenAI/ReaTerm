@@ -261,6 +261,8 @@ directories. They check that setup/test/pack failures abort publication,
 publish requires `--publish`, and temporary token config is removed.
 
 No test performs an actual upload or requires npm/PyPI credentials.
+The isolated wheel test copies the shared tokenizer corpus alongside the
+Python tests, preserving their source-tree relative paths.
 The publication action depends on PyPI Trusted Publishing configuration,
 which this offline suite cannot verify. The old CI workflows remain
 disabled; this PyPI workflow is independently triggered by a **published**

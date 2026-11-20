@@ -197,7 +197,8 @@ Every modification must preserve:
 - .github/workflows/publish-pypi.yml: active GitHub-release-triggered PyPI
   Trusted Publishing workflow for the `reaterm` wheel/sdist. Requires
   matching `vVERSION` tag and versions in Python/Rust/npm; tests the
-  native Linux CLI and clean Python wheel before granting OIDC.
+  native Linux CLI and clean Python wheel before granting OIDC. Its isolated
+  wheel tests preserve the Python tests' relative layout to src/shared.
 - src/typescript/scripts/npm_publish.sh: npm-only unscoped
   `reaterm` publishing helper. It publishes by default;
   use `--dry-run` for validation without uploading. Validate built JS/types,

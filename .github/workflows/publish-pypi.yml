@@ -93,12 +93,14 @@ jobs:
           wheel="$(find src/python/dist -maxdepth 1 -name '*.whl' -print -quit)"
           test -f "$wheel"
           "$temp/venv/bin/python" -m pip install --disable-pip-version-check "$wheel"
-          cp -R src/python/tests "$temp/tests"
+          mkdir -p "$temp/python"
+          cp -R src/python/tests "$temp/python/tests"
+          cp -R src/shared "$temp/shared"
           export REATERM_BIN="$GITHUB_WORKSPACE/src/rust/target/release/reaterm"
           test -x "$REATERM_BIN"
           cd "$temp"
           "$temp/venv/bin/python" -c 'from importlib.metadata import version; import reaterm; assert version("reaterm"); print(reaterm.__file__)'
-          "$temp/venv/bin/python" -m unittest discover -s tests -p 'test_*.py' -v
+          "$temp/venv/bin/python" -m unittest discover -s python/tests -p 'test_*.py' -v
 
       - name: Upload verified distributions
         uses: actions/upload-artifact@v4
