@@ -1,9 +1,5 @@
 # ReaTerm Agent and Contributor Instructions
 
-## Git workflow (repository owner directive)
-
-**Always commit and push directly to `main`; do not create pull requests for repository changes.** Read the current `main` head before changing files, preserve other contributors' commits, run relevant checks, and make only normal fast-forward updates. Never force-push, reset `main`, or bypass branch protections. If a concurrent change or protection rule blocks the push, report the blocker instead of opening a PR or discarding changes. Publishing to PyPI/npm requires a separate explicit release action; ordinary pushes to `main` must not publish.
-
 ## README content policy (all README files)
 
 **Every README must attract and orient users, not teach project
@@ -221,7 +217,6 @@ Every modification must preserve:
 ## Contributor workflow
 
 1. Read README.md and docs/THREAT_MODEL.md before security changes.
-   Apply the direct-to-main workflow above; do not create PRs.
 2. Implement policy/operations in Rust first; keep wrappers very thin.
 3. Add tests for both allowed operations and denied writes, new flags, path
    escapes, symlinks and huge outputs. Test against disposable fixture trees.
@@ -259,12 +254,12 @@ Every modification must preserve:
    Do not claim PyPI/npm publication without verifying it. Keep docs/website
    dependency-free and accurate about kernel/security boundaries. Run
    python -m unittest discover -s docs/website -p "test_*.py" -v
-   when changing website files. Never commit secrets or analytics code.
+   when changing website files. Keep secrets and analytics code out of the repository.
    On Windows, run scripts/verify-windows.ps1 -Mode verify to test the
    Rust, Python, TypeScript and website stages in fail-fast order.
    Run sandbox and integration tests on Linux x86-64/ARM64 and macOS Intel/
    Apple Silicon after platform-sensitive changes.
-10. Publishing is high impact: maintain consistent package names and
+10. Publishing requires a separate explicit release action. Maintain consistent package names and
     versions, never publish during tests, use PyPI OIDC trusted publisher
     and scope `pypi` environment, and keep npm auth outside the
     source tree. The Python package does not provide the Rust binary,
@@ -275,7 +270,7 @@ Every modification must preserve:
     intentionally disabled; do not reactivate them.
 11. **Keep AGENTS.md current with every relevant change.** Whenever commands,
    architecture, security rules, dependencies, workflows, interfaces, or
-   development instructions change, update this file in the same commit.
+   development instructions change, update this file accordingly.
    Record the current conventions and key decisions so future contributors
    and coding agents can continue development without rediscovering context.
 
