@@ -69,6 +69,23 @@ class RootMakeWorkflowTests(unittest.TestCase):
         self.assertEqual(process.returncode, 0, process.stderr)
         self.assertEqual(observed, STEPS)
 
+    def test_python_setup_rejects_old_interpreter_before_creating_venv(self):
+        python = self.base / "old-python"
+        python.write_text(
+            "#!/bin/sh\nexec " + shutil.which("python3")
+            + " -c 'import sys; sys.version_info = (3, 9); exec(sys.argv[1])' \"$2\"\n",
+            encoding="utf-8",
+        )
+        python.chmod(0o755)
+        venv = self.base / "venv"
+        process = subprocess.run(
+            ["make", "-C", str(ROOT / "src/python"), "setup", f"PYTHON={python}", f"VENV_DIR={venv}"],
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn("requires Python 3.11 or newer", process.stderr)
+        self.assertFalse(venv.exists())
+
     def test_verify_stays_sequential_even_with_make_parallel_flag(self):
         process, observed = self.run_root("verify", parallel=True)
         self.assertEqual(process.returncode, 0, process.stderr)

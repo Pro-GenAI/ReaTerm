@@ -93,6 +93,9 @@ Every modification must preserve:
   workflow, currently disabled. Do not re-enable without approval.
 - docs/DEVELOPMENT.md: supported platform matrix and native/cross builds.
 - src/python/: Python 3.11+ interface with optional official openai dependency.
+  POSIX make setup checks the selected `PYTHON` version and upgrades pip in
+  its virtualenv before editable installation; override `PYTHON` when needed.
+  An existing virtualenv with an unsupported Python must be removed and recreated.
   Package-level `reaterm.run("ls -al", root=".")` shlex-tokenizes a single
   string into argv; class `ReaTerm.run("ls", "-al")` keeps literal-argv behavior.
 - src/python/reaterm/mcp_server.py: stdio MCP server using optional official

@@ -25,7 +25,10 @@ verify:
 	powershell.exe -NoProfile -ExecutionPolicy Bypass -File "../../scripts/verify-windows.ps1" -Mode verify -Language python
 else
 setup:
+	@$(PYTHON) -c 'import sys; sys.exit("ReaTerm requires Python 3.11 or newer; set PYTHON to a supported interpreter") if sys.version_info < (3, 11) else None'
 	$(PYTHON) -m venv "$(VENV_DIR)"
+	@"$(VENV_PYTHON)" -c 'import sys; sys.exit("Virtualenv requires Python 3.11 or newer; remove it and rerun setup") if sys.version_info < (3, 11) else None'
+	"$(VENV_PYTHON)" -m pip install --disable-pip-version-check --upgrade pip
 	"$(VENV_PYTHON)" -m pip install --disable-pip-version-check -e '.[mcp-test]'
 
 test:

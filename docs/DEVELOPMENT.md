@@ -767,7 +767,11 @@ Per-language commands (run from the repository root):
 `src/rust/Makefile` builds a release binary in `src/rust/target/release/`
 rather than installing to global PATH. The Python setup creates
 `src/python/.venv` and installs the package in editable mode there;
-it does not modify system Python. The TypeScript setup uses
+it does not modify system Python. Python 3.11 or newer is required. If
+`python3` is older (as on some macOS installations), select a supported
+interpreter with `make verify PYTHON=python3.11`. The setup upgrades pip in
+the virtualenv before installing the package. If an existing virtualenv uses
+an older Python, remove `src/python/.venv` and rerun setup. The TypeScript setup uses
 `npm install --no-audit --no-fund`. The website is dependency-free.
 
 A language-specific Python/TypeScript `make test` expects
