@@ -77,7 +77,10 @@ docs/website/
 
 All site resources are relative paths, so the site works on localhost and
 after deployment. No external JavaScript libraries, analytics, or remote
-fonts are required. The GitHub and registry links lead off-site.
+fonts are required. The GitHub and registry links lead off-site. The homepage displays external
+SVG badges for all-time PyPI downloads (Pepy) and npm downloads (shieldcn),
+using the `reaterm` package name. These require no JavaScript or analytics
+and do not verify that either registry package has been published.
 
 ## Test locally or in CI
 

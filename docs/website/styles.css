@@ -83,6 +83,10 @@ svg { display: block; }
 .button-primary:hover { background: #b2fede; color: #091d20; }
 .button-secondary { background: rgba(169,195,206,.065); color: #d8e9ec; border-color: var(--border-strong); }
 .button-secondary:hover { color: #fff; border-color: #648f9e; background: rgba(169,195,206,.1); }
+.download-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 22px; }
+.download-badges a { display: inline-flex; align-items: center; max-width: 100%; border-radius: 6px; }
+.download-badges a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.download-badges img { display: block; max-width: 100%; width: auto; height: 28px; }
 .hero-meta { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 33px; color: #819bab; font-size: 12px; font-weight: 610; }
 .hero-meta i { font-style: normal; margin-right: 7px; color: #89eabc; }
 

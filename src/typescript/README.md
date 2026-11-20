@@ -2,6 +2,9 @@
 
 [![MIT license](https://img.shields.io/github/license/Pro-GenAI/ReaTerm?label=license)](../../LICENSE)
 
+<a href="https://pepy.tech/projects/reaterm"><img src="https://static.pepy.tech/personalized-badge/reaterm?period=total&amp;units=NONE&amp;left_color=BLACK&amp;right_color=GREEN&amp;left_text=PyPI%20Downloads" alt="PyPI total downloads" height="28"></a>
+<a href="https://www.npmjs.com/package/reaterm"><img src="https://shieldcn.dev/npm/dt/reaterm.svg?label=npm%20downloads" alt="npm total downloads" height="28"></a>
+
 **Explore files from JavaScript without offering an arbitrary shell.**
 
 ReaTerm provides an asynchronous Node.js and TypeScript interface backed

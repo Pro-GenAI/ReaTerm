@@ -143,6 +143,10 @@ Every modification must preserve:
   platform-tested badges until their claims can be verified with current
   evidence. Explicitly distinguish source examples from published package
   availability. Link to docs/DEVELOPMENT.md for installation and testing.
+  Display both all-time download badges on the root, Python, npm and website
+  READMEs and on the website hero. Use `reaterm` in Pepy's `period=total`
+  badge and the npm `/dt/` badge; these are externally hosted SVG images,
+  not evidence that either registry package has been published.
 - docs/DEVELOPMENT.md: setup, build, test and troubleshooting.
 - docs/TOOL_INTEGRATIONS.md: provider schemas, tool-call/result cycles, and confidentiality risks.
 - docs/website/: self-contained, deployable static website (index.html,

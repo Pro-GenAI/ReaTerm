@@ -127,6 +127,37 @@ class StaticWebsiteTests(unittest.TestCase):
             self.assertIn(url, links)
         self.assertIn("Registry availability is not guaranteed", (SITE / "index.html").read_text(encoding="utf-8"))
 
+    def test_all_time_download_badges_on_website_and_readmes(self) -> None:
+        page = parse_page()
+        badges = {
+            img["alt"]: img["src"]
+            for img in page.find("img")
+            if img.get("alt") in {"PyPI total downloads", "npm total downloads"}
+        }
+        self.assertEqual(set(badges), {"PyPI total downloads", "npm total downloads"})
+        self.assertIn("/personalized-badge/reaterm", badges["PyPI total downloads"])
+        self.assertIn("period=total", badges["PyPI total downloads"])
+        self.assertIn("units=NONE", badges["PyPI total downloads"])
+        self.assertIn("/npm/dt/reaterm.svg", badges["npm total downloads"])
+
+        links = {anchor.get("href") for anchor in page.find("a")}
+        self.assertIn("https://pepy.tech/projects/reaterm", links)
+        self.assertIn("https://www.npmjs.com/package/reaterm", links)
+
+        root = SITE.parents[1]
+        for path in [
+            root / "README.md",
+            root / "src/python/README.md",
+            root / "src/typescript/README.md",
+            SITE / "README.md",
+        ]:
+            with self.subTest(readme=str(path.relative_to(root))):
+                content = path.read_text(encoding="utf-8")
+                self.assertIn("/personalized-badge/reaterm?period=total", content)
+                self.assertIn("/npm/dt/reaterm.svg", content)
+                self.assertIn('alt="PyPI total downloads"', content)
+                self.assertIn('alt="npm total downloads"', content)
+
     def test_provider_tool_docs_and_one_line_examples(self) -> None:
         page = parse_page()
         ids = {attrs.get("id") for _, attrs in page.elements}
