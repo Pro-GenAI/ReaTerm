@@ -12,7 +12,7 @@ Apple Silicon with Seatbelt, plus Rust/Cargo, Python 3.11+, Node.js 20+
 and npm. The former GitHub Actions four-platform test matrix passed before it was
 disabled; those GitHub Actions test workflows remain disabled. CircleCI is
 configured separately for native Linux x86-64, Linux ARM64, and Apple
-Silicon (including Windows x86-64 by default), but runs only after the CircleCI
+Silicon and Windows x86-64; Linux ARM64 is opt-in. It runs only after the CircleCI
 project is connected and provisioned. See [DEVELOPMENT.md](DEVELOPMENT.md).
 Do **not** run the test suite as root.
 
@@ -139,8 +139,8 @@ around ReaTerm, before the binary launches. ReaTerm is also not a
 confidentiality boundary: the caller chooses the readable root.
 
 When the CircleCI project is connected, its default workflows test Linux
-x86-64, Linux ARM64 and Apple Silicon M4 Pro. A separate Windows x86-64
-workflow is enabled by default. No CircleCI-hosted macOS Intel executor is currently
+x86-64, Apple Silicon M4 Pro and Windows x86-64. Set `run_arm_ci=true` to
+enable Linux ARM64. No CircleCI-hosted macOS Intel executor is currently
 available, so the configuration does not claim live Intel validation.
 ARM64 Linux VMs also do not establish that your particular Raspberry Pi's
 kernel has Landlock enabled: run the suite on the Pi.

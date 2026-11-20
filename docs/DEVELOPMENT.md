@@ -114,14 +114,14 @@ resource classes. It does not configure a project automatically.
 | Workflow | Executor | Default | Verification |
 | --- | --- | --- | --- |
 | `linux_ci` | Ubuntu 24.04 x86-64 VM | On | Rust Landlock/seccomp, Python, TypeScript, website, scripts |
-| `linux_arm_ci` | Ubuntu 24.04 native ARM64 VM (`arm.large`) | On | Same tests on AArch64 kernel sandbox |
+| `linux_arm_ci` | Ubuntu 24.04 native ARM64 VM (`arm.large`) | Off | Same tests on AArch64 kernel sandbox |
 | `apple_silicon_ci` | macOS Apple Silicon M4 Pro (`m4pro.medium`), Xcode 27.1 | On | Rust Seatbelt, Python, TypeScript, website, scripts |
 | `windows_ci` | Windows Server 2022 x86-64 | On | Native PowerShell fail-fast runner including Windows token tests |
 
-CircleCI pipeline parameters: `run_arm_ci` and `run_mac_ci` default to
-`true`, including `run_windows_ci`; `run_stress` defaults to `false`
-and, when enabled, runs the 10,001-entry listing-limit regression on Linux
-x86-64. The default Windows workflow requires usable Windows CircleCI
+CircleCI pipeline parameters: set `run_arm_ci` to `true` to enable Linux
+ARM64; `run_mac_ci` and `run_windows_ci` default to `true`.
+`run_stress` defaults to `false` and, when enabled, runs the 10,001-entry
+listing-limit regression on Linux x86-64. The default Windows workflow requires usable Windows CircleCI
 credits/resources and must be monitored for native support.
 
 Unix runners install Rust stable with rustfmt/Clippy, Python 3.11+ and Node
@@ -146,6 +146,7 @@ With the CircleCI CLI installed, validate changes using:
 
 ~~~bash
 circleci config validate .circleci/config.yml
+circleci run trigger --param run_arm_ci=true
 ~~~
 
 ## Documentation ownership

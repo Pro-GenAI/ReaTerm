@@ -183,8 +183,8 @@ Every modification must preserve:
   retain the Cargo.lock pin because of RUSTSEC-2026-0482.
 - .circleci/config.yml: native CircleCI regression pipelines, based on the
   Agent-RT configuration pattern. Linux x86-64 runs by default; native Linux
-  ARM64 and macOS Apple Silicon (M4 Pro) are default-on parameterized
-  workflows. Windows Server 2022 x86-64 defaults on with run_windows_ci=true;
+  ARM64 is opt-in with run_arm_ci=true. macOS Apple Silicon (M4 Pro) and
+  Windows Server 2022 x86-64 default on with run_mac_ci and run_windows_ci;
   slow resource stress is opt-in with run_stress=true. Every enabled job
   runs the actual Rust CLI sandbox and full language/website regression
   suite; the Unix jobs use sequential make verify and cache registry data.
