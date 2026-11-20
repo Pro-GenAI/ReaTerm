@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 NPM_SCRIPT = ROOT / "src/typescript/scripts/npm_publish.sh"
@@ -124,7 +125,7 @@ if args[:1] == ["whoami"]:
 
     def invoke(self, *args, extra_env=None):
         env = os.environ.copy()
-        for name in ("NPM_CONFIG_USERCONFIG", "NPM_TOKEN", "NPM_REGISTRY", "MOCK_FAIL_NPM", "MOCK_BAD_PACK", "PACKAGE_MANAGER"):
+        for name in ("BASH_ENV", "NPM_CONFIG_USERCONFIG", "NPM_TOKEN", "NPM_REGISTRY", "MOCK_FAIL_NPM", "MOCK_BAD_PACK", "PACKAGE_MANAGER"):
             env.pop(name, None)
         env.update({
             "PATH": str(self.bin_dir) + os.pathsep + os.environ["PATH"],
@@ -152,6 +153,14 @@ if args[:1] == ["whoami"]:
         self.assertTrue(self.logged()[2].startswith("pack --dry-run --json"))
         self.assertFalse(self.config_log.exists())
         self.assertFalse((self.root / "src/typescript/.npmrc.publish").exists())
+
+    def test_inherited_bash_env_does_not_run_in_publisher(self):
+        bash_env = self.root / "bash_env"
+        bash_env.write_text("npm --version\n", encoding="utf-8")
+        with patch.dict(os.environ, {"BASH_ENV": str(bash_env)}):
+            result = self.invoke("--help")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.logged(), [])
 
     def test_help_and_bad_flags_never_install(self):
         self.assertEqual(self.invoke("--help").returncode, 0)
