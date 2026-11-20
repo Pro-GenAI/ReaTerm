@@ -50,7 +50,7 @@ def anyio_backend():
 @pytest.fixture
 def mcp_server(tmp_path: Path):
     """A newly launched native-root-scoped Python MCP server per test."""
-    (tmp_path / "readme.txt").write_text("public text\n", encoding="utf-8")
+    (tmp_path / "readme.txt").write_bytes(b"public text\n")
     return server_target(tmp_path)
 
 

@@ -88,7 +88,8 @@ Every modification must preserve:
   regressions for traversal/absolute paths in every file reader, denied
   shells/writes, and informational-flag validation before root access.
   Disposable fixtures must retain contents, metadata and entry counts.
-- scripts/verify-windows.ps1: native Windows setup/test/verify runner.
+- scripts/verify-windows.ps1: native Windows setup/test/verify runner; accepts
+  npm.cmd or the npm.exe shim provided by NVM for Windows.
 - .github/workflows/windows.yml.disabled: Windows x86-64 verification
   workflow, currently disabled. Do not re-enable without approval.
 - docs/DEVELOPMENT.md: supported platform matrix and native/cross builds.

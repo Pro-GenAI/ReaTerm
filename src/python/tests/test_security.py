@@ -164,7 +164,7 @@ class RealNativeBridgeTests(unittest.TestCase):
     def test_native_bridge_reads_and_refuses_mutations(self):
         with tempfile.TemporaryDirectory(prefix="reaterm-py-") as directory:
             path = Path(directory) / "literal;touch BAD"
-            path.write_text("intact\n", encoding="utf-8")
+            path.write_bytes(b"intact\n")
             binary = os.environ["REATERM_BIN"]
             with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
                 client = ReaTerm(root=directory, binary=binary)

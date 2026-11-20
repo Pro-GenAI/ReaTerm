@@ -17,6 +17,7 @@ $ts = Join-Path $root "src\typescript"
 $site = Join-Path $root "docs\website"
 $binary = Join-Path $rust "target\release\reaterm.exe"
 $pythonVenv = Join-Path $python ".venv\Scripts\python.exe"
+$npm = if (Get-Command "npm.cmd" -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm.exe" }
 
 # Do not send real commands to an external model during regression tests.
 $env:REATERM_DECISION_MODEL = ""
@@ -63,13 +64,13 @@ function Test-Python {
 }
 
 function Setup-TypeScript {
-    Run-Checked "npm.cmd" @("install", "--no-audit", "--no-fund") $ts
+    Run-Checked $npm @("install", "--no-audit", "--no-fund") $ts
 }
 
 function Test-TypeScript {
     Assert-Binary
     $env:REATERM_BIN = $binary
-    Run-Checked "npm.cmd" @("run", "check") $ts
+    Run-Checked $npm @("run", "check") $ts
 }
 
 function Setup-Website {

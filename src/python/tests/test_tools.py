@@ -131,7 +131,7 @@ class Execution(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="reaterm-provider-tools-") as directory:
             path = Path(directory) / "file;$(touch PWNED)"
-            path.write_text("intact\n", encoding="utf-8")
+            path.write_bytes(b"intact\n")
             with patch.dict(os.environ, {"REATERM_DECISION_MODEL": ""}):
                 self.assertEqual(
                     execute_reaterm_tool(
