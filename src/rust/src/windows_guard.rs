@@ -247,7 +247,8 @@ pub(crate) fn enforce_read_only() -> Result<(), String> {
     let total_length = header_length
         .checked_add(sid_length)
         .ok_or("Windows integrity label size overflow")?;
-    let label_size = u32::try_from(total_length).map_err(|_| "Windows integrity label too large")?;
+    let label_size =
+        u32::try_from(total_length).map_err(|_| "Windows integrity label too large")?;
     // Vec<usize> ensures pointer-size alignment for SID_AND_ATTRIBUTES;
     // the SID payload is copied immediately after that header.
     let words = total_length.div_ceil(std::mem::size_of::<usize>());

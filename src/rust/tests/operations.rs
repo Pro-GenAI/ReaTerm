@@ -185,7 +185,10 @@ fn explicit_end_of_options_and_multifile_literal_grep() {
         success(&root, &["grep", "-ni", "--", "needle", "-n", "-i"]),
         "-n:2:Needle\n-i:1:needle\n"
     );
-    assert_eq!(success(&root, &["grep", "-i", "other", "normal"]), "OTHER\n");
+    assert_eq!(
+        success(&root, &["grep", "-i", "other", "normal"]),
+        "OTHER\n"
+    );
     fs::write(root.path().join("--"), "literal delimiter\n").unwrap();
     assert_eq!(success(&root, &["head", "--", "--"]), "literal delimiter\n");
     assert_eq!(success(&root, &["tail", "--", "--"]), "literal delimiter\n");
@@ -199,8 +202,5 @@ fn grep_case_insensitive_matching_respects_unicode_word_context() {
     // Uppercase Greek sigma lowercases differently at the end of a word.
     // Per-character lowercasing loses the contextual final-sigma mapping.
     fs::write(root.path().join("greek.txt"), "ΟΣ\n").unwrap();
-    assert_eq!(
-        success(&root, &["grep", "-i", "ος", "greek.txt"]),
-        "ΟΣ\n"
-    );
+    assert_eq!(success(&root, &["grep", "-i", "ος", "greek.txt"]), "ΟΣ\n");
 }

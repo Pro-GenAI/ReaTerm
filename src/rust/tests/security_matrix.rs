@@ -58,7 +58,10 @@ fn every_file_reader_denies_absolute_and_parent_traversal_without_disclosure() {
     assert_eq!(fs::read(&secret_file).unwrap(), b"DO_NOT_EXPOSE\n");
     assert_eq!(before.len(), after.len());
     assert_eq!(before.modified().unwrap(), after.modified().unwrap());
-    assert_eq!(before.permissions().readonly(), after.permissions().readonly());
+    assert_eq!(
+        before.permissions().readonly(),
+        after.permissions().readonly()
+    );
     assert_eq!(fs::read_dir(root.path()).unwrap().count(), 1);
 }
 

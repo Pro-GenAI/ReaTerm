@@ -62,7 +62,10 @@ fn sensitive_name(value: &str) -> bool {
             | "token"
             | "token.json"
     ) || (name.starts_with(".env.")
-        && !matches!(name.as_str(), ".env.example" | ".env.sample" | ".env.template"))
+        && !matches!(
+            name.as_str(),
+            ".env.example" | ".env.sample" | ".env.template"
+        ))
         || name == ".env"
         || name.ends_with(".pem")
         || name.ends_with(".key")
@@ -575,7 +578,9 @@ fn stat<W: Write>(root: &Dir, args: &[String], out: &mut Output<W>) -> Result<()
     };
     let path = checked_path(name)?;
     reject_symlink_components(root, &path, false)?;
-    let meta = root.symlink_metadata(path).map_err(|e| format!("{name}: {e}"))?;
+    let meta = root
+        .symlink_metadata(path)
+        .map_err(|e| format!("{name}: {e}"))?;
     line(
         out,
         &format!(
@@ -645,7 +650,10 @@ fn enforce_read_only(root_path: &Path) -> Result<(), String> {
         .handle_access(AccessFs::from_all(abi))
         .map_err(|e| format!("Landlock policy: {e}"))?;
     let read_only = AccessFs::ReadFile | AccessFs::ReadDir;
-    let rule = PathBeneath::new(PathFd::new(root_path).map_err(|e| e.to_string())?, read_only);
+    let rule = PathBeneath::new(
+        PathFd::new(root_path).map_err(|e| e.to_string())?,
+        read_only,
+    );
     let status = builder
         .create()
         .map_err(|e| format!("Landlock setup: {e}"))?

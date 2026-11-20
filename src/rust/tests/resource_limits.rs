@@ -88,7 +88,6 @@ fn listing_above_ten_thousand_entries_is_denied() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("10000 entries"));
 }
 
-
 #[test]
 #[ignore = "stress: creates 10001 hidden files; run cargo test --test resource_limits -- --ignored"]
 fn hidden_entries_count_towards_the_directory_scan_limit() {

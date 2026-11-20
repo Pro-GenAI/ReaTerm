@@ -192,7 +192,6 @@ fn root_and_help_errors_are_explicit() {
     }
 }
 
-
 #[test]
 fn fifos_are_rejected_without_waiting_for_a_writer() {
     use std::ffi::CString;

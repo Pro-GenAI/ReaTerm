@@ -93,8 +93,14 @@ fn common_secret_files_and_directories_are_denied() {
     ] {
         assert!(!names.contains(hidden), "leaked name: {hidden}");
     }
-    assert_eq!(invoke(root.path(), &["cat", "safe.txt"]).stdout, b"PUBLIC\n");
-    assert_eq!(invoke(root.path(), &["cat", ".env.example"]).stdout, b"EXAMPLE\n");
+    assert_eq!(
+        invoke(root.path(), &["cat", "safe.txt"]).stdout,
+        b"PUBLIC\n"
+    );
+    assert_eq!(
+        invoke(root.path(), &["cat", ".env.example"]).stdout,
+        b"EXAMPLE\n"
+    );
 }
 
 #[test]
